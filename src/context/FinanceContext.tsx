@@ -36,7 +36,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [recurringBills, setRecurringBills] = useState<RecurringBill[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: 'Usuário', email: 'usuario@exemplo.com' });
-  const [settings, setSettings] = useState<AppSettings>({ isDarkMode: false, notificationsEnabled: true, biometricsEnabled: false });
+  const [settings, setSettings] = useState<AppSettings>({ isDarkMode: true, notificationsEnabled: true, biometricsEnabled: false });
   const [isLoading, setIsLoading] = useState(true);
   const [isValuesVisible, setIsValuesVisible] = useState(false); // Hidden by default
 
