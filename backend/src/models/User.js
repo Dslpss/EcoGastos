@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   settings: {
     isDarkMode: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     notificationsEnabled: {
       type: Boolean,
