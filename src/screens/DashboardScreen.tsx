@@ -8,6 +8,7 @@ import { PieChart } from 'react-native-chart-kit';
 import { AddIncomeModal } from '../components/AddIncomeModal';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '../components/Header';
+import { FinancialHealthCard } from '../components/FinancialHealthCard';
 
 const { width } = Dimensions.get('window');
 
@@ -126,6 +127,13 @@ export const DashboardScreen = () => {
             <Text style={[styles.summaryValue, { color: theme.text }]}>{pendingBillsCount}</Text>
           </View>
         </View>
+
+        {/* Financial Health Insight */}
+        <FinancialHealthCard 
+          income={totalIncome} 
+          expenses={totalExpenses} 
+          savingsGoal={savingsGoal} 
+        />
 
         {/* Savings Goal Card */}
         {savingsGoal > 0 && (
