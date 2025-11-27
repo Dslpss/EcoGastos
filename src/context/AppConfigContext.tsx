@@ -9,6 +9,8 @@ interface AppConfig {
   update_message: string;
   update_url: string;
   force_update: boolean;
+  show_warning: boolean;
+  warning_message: string;
 }
 
 interface AppConfigContextData {
@@ -19,6 +21,8 @@ interface AppConfigContextData {
   maintenanceMessage: string;
   updateMessage: string;
   updateUrl: string;
+  showWarning: boolean;
+  warningMessage: string;
   refreshConfig: () => Promise<void>;
   openUpdateUrl: () => void;
 }
@@ -68,6 +72,8 @@ export const AppConfigProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       maintenanceMessage: config?.maintenance_message || '',
       updateMessage: config?.update_message || '',
       updateUrl: config?.update_url || '',
+      showWarning: config?.show_warning || false,
+      warningMessage: config?.warning_message || '',
       refreshConfig: fetchConfig,
       openUpdateUrl,
     }}>

@@ -41,7 +41,9 @@ router.put('/', auth, async (req, res) => {
       has_update, 
       update_message, 
       update_url, 
-      force_update 
+      force_update,
+      show_warning,
+      warning_message
     } = req.body;
 
     let config = await AppConfig.findOne();
@@ -57,6 +59,8 @@ router.put('/', auth, async (req, res) => {
     if (update_message !== undefined) config.update_message = update_message;
     if (update_url !== undefined) config.update_url = update_url;
     if (force_update !== undefined) config.force_update = force_update;
+    if (show_warning !== undefined) config.show_warning = show_warning;
+    if (warning_message !== undefined) config.warning_message = warning_message;
 
     await config.save();
 

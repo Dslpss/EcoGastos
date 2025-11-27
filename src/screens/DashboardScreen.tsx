@@ -10,11 +10,14 @@ import { AddIncomeModal } from '../components/AddIncomeModal';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '../components/Header';
 import { FinancialHealthCard } from '../components/FinancialHealthCard';
+import { WarningCard } from '../components/WarningCard';
+import { useAppConfig } from '../context/AppConfigContext';
 
 const { width } = Dimensions.get('window');
 
 export const DashboardScreen = () => {
   const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible, userProfile, deleteIncome } = useFinance();
+  const { showWarning, warningMessage } = useAppConfig();
   const [isIncomeModalVisible, setIsIncomeModalVisible] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
   const navigation = useNavigation<any>();
@@ -107,6 +110,11 @@ export const DashboardScreen = () => {
           subtitle="Bem-vindo de volta" 
           showProfile 
         />
+
+        {/* Warning Card */}
+        {showWarning && warningMessage && (
+          <WarningCard message={warningMessage} />
+        )}
 
         {/* Balance Card */}
         <View style={[styles.balanceCard, { backgroundColor: theme.primary }]}>

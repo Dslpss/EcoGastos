@@ -11,6 +11,8 @@ interface AppConfig {
   update_message: string;
   update_url: string;
   force_update: boolean;
+  show_warning: boolean;
+  warning_message: string;
 }
 
 export const Dashboard = () => {
@@ -174,6 +176,43 @@ export const Dashboard = () => {
                   className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
                 />
                 <label htmlFor="forceUpdate" className="text-sm font-medium text-gray-700">Atualização Obrigatória (Bloqueante)</label>
+              </div>
+            </div>
+          </div>
+
+          {/* Warning Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden md:col-span-2">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <div className="flex items-center space-x-3">
+                <div className="bg-yellow-100 p-2 rounded-lg">
+                  <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Aviso no App</h2>
+                  <p className="text-sm text-gray-500">Exibir mensagem de alerta não-bloqueante</p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={config?.show_warning || false}
+                  onChange={(e) => setConfig(prev => prev ? ({ ...prev, show_warning: e.target.checked }) : null)}
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+              </label>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mensagem de Aviso</label>
+                <textarea 
+                  value={config?.warning_message || ''}
+                  onChange={(e) => setConfig(prev => prev ? ({ ...prev, warning_message: e.target.value }) : null)}
+                  rows={3}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none resize-none"
+                  placeholder="Ex: O sistema passará por manutenção às 22h."
+                />
               </div>
             </div>
           </div>

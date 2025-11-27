@@ -25,6 +25,14 @@ const appConfigSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  show_warning: {
+    type: Boolean,
+    default: false,
+  },
+  warning_message: {
+    type: String,
+    default: '',
+  },
 }, {
   timestamps: { updatedAt: 'updated_at' }, // Maps updatedAt to updated_at
 });
