@@ -80,6 +80,7 @@ router.post(
             email: user.email,
             profile: user.profile,
             settings: user.settings,
+            isAdmin: user.isAdmin,
           },
         },
       });
@@ -147,6 +148,7 @@ router.post(
             email: user.email,
             profile: user.profile,
             settings: user.settings,
+            isAdmin: user.isAdmin,
           },
         },
       });
@@ -176,6 +178,7 @@ router.get('/me', auth, async (req, res) => {
           email: user.email,
           profile: user.profile,
           settings: user.settings,
+          isAdmin: user.isAdmin,
         },
       },
     });

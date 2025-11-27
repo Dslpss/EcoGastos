@@ -39,6 +39,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
+app.use('/api/config', require('./routes/config'));
 
 // Root route
 app.get('/', (req, res) => {

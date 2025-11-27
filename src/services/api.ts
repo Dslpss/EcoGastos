@@ -107,4 +107,12 @@ export const financeAPI = {
   },
 };
 
+// Config API
+export const configAPI = {
+  getConfig: async () => {
+    const response = await api.get('/config');
+    return response.data;
+  },
+};
+
 export default api;

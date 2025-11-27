@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Senha deve ter no mínimo 6 caracteres'],
     select: false, // Don't return password by default
   },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
   profile: {
     savingsGoal: {
       type: Number,

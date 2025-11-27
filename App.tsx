@@ -7,6 +7,34 @@ import { FinanceProvider, useFinance } from './src/context/FinanceContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { COLORS } from './src/constants';
+import { AppConfigProvider, useAppConfig } from './src/context/AppConfigContext';
+import { MaintenanceScreen } from './src/screens/MaintenanceScreen';
+import { UpdateScreen } from './src/screens/UpdateScreen';
+
+const ConfigWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isMaintenance, hasUpdate, isForceUpdate } = useAppConfig();
+  const [showUpdate, setShowUpdate] = useState(false);
+
+  useEffect(() => {
+    if (hasUpdate) {
+      setShowUpdate(true);
+    }
+  }, [hasUpdate]);
+
+  if (isMaintenance) {
+    return <MaintenanceScreen />;
+  }
+
+  return (
+    <>
+      {children}
+      <UpdateScreen 
+        visible={showUpdate || isForceUpdate} 
+        onClose={() => !isForceUpdate && setShowUpdate(false)} 
+      />
+    </>
+  );
+};
 
 const AuthWrapper = () => {
   const { settings, isLoading } = useFinance();
@@ -75,12 +103,16 @@ const styles = StyleSheet.create({
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <FinanceProvider>
-          <AuthWrapper />
-          <StatusBar style="auto" />
-        </FinanceProvider>
-      </AuthProvider>
+      <AppConfigProvider>
+        <AuthProvider>
+          <FinanceProvider>
+            <ConfigWrapper>
+              <AuthWrapper />
+            </ConfigWrapper>
+            <StatusBar style="auto" />
+          </FinanceProvider>
+        </AuthProvider>
+      </AppConfigProvider>
     </SafeAreaProvider>
   );
 }
