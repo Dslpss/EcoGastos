@@ -38,4 +38,11 @@ export const authAPI = {
   },
 };
 
+export const usersAPI = {
+  getUsers: async () => {
+    const response = await api.get('/users');
+    return response.data;
+  },
+};
+
 export default api;

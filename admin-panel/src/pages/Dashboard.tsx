@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { configAPI } from '../api';
-import { LogOut, Settings, AlertTriangle, Smartphone, RefreshCw, Save } from 'lucide-react';
+import { LogOut, Settings, AlertTriangle, Smartphone, RefreshCw, Save, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface AppConfig {
   is_maintenance: boolean;
@@ -68,7 +69,14 @@ export const Dashboard = () => {
             <h1 className="text-xl font-bold text-gray-900">EcoGastos Admin</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">Olá, {user?.name}</span>
+            <Link 
+              to="/users"
+              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors bg-gray-50 px-3 py-2 rounded-lg"
+            >
+              <Users className="h-5 w-5" />
+              <span className="text-sm font-medium">Usuários</span>
+            </Link>
+            <span className="text-sm text-gray-600 border-l pl-4 border-gray-200">Olá, {user?.name}</span>
             <button 
               onClick={logout}
               className="flex items-center space-x-2 text-gray-500 hover:text-red-600 transition-colors"
