@@ -38,8 +38,8 @@ export const EditProfileModal: React.FC<Props> = ({ visible, onClose }) => {
         name, 
         email,
         savingsGoal: savingsGoal ? parseFloat(savingsGoal.replace(',', '.')) : 0,
-        salaryDay: salaryDay ? parseInt(salaryDay) : undefined,
-        salaryAmount: salaryAmount ? parseFloat(salaryAmount.replace(',', '.')) : 0
+        salaryDay: salaryDay ? parseInt(salaryDay) : null,
+        salaryAmount: salaryAmount ? parseFloat(salaryAmount.replace(',', '.')) : null
       });
       onClose();
     } catch (error) {

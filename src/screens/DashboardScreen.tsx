@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFinance } from '../context/FinanceContext';
 import { Income } from '../types';
@@ -14,10 +14,25 @@ import { FinancialHealthCard } from '../components/FinancialHealthCard';
 const { width } = Dimensions.get('window');
 
 export const DashboardScreen = () => {
-  const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible, userProfile } = useFinance();
+  const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible, userProfile, deleteIncome } = useFinance();
   const [isIncomeModalVisible, setIsIncomeModalVisible] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
   const navigation = useNavigation<any>();
+
+  const handleDeleteIncome = (income: Income) => {
+    Alert.alert(
+      'Excluir Entrada',
+      'Tem certeza que deseja excluir esta entrada?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Excluir', 
+          style: 'destructive',
+          onPress: () => deleteIncome(income.id)
+        }
+      ]
+    );
+  };
 
   const totalExpenses = useMemo(() => {
     const now = new Date();
@@ -189,19 +204,43 @@ export const DashboardScreen = () => {
         {/* Chart Section */}
         {chartData.length > 0 && (
           <View style={[styles.chartContainer, { backgroundColor: theme.card }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Gastos por Categoria</Text>
-            <PieChart
-              data={chartData}
-              width={width - 40}
-              height={220}
-              chartConfig={{
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              }}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              absolute
-            />
+            <View style={styles.chartHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: theme.secondary + '20', marginBottom: 0 }]}>
+                <Ionicons name="pie-chart" size={20} color={theme.secondary} />
+              </View>
+              <Text style={[styles.chartTitle, { color: theme.text }]}>Gastos por Categoria</Text>
+            </View>
+            
+            <View style={{ alignItems: 'center' }}>
+              <PieChart
+                data={chartData}
+                width={width - 40}
+                height={200}
+                chartConfig={{
+                  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                  labelColor: (opacity = 1) => theme.text,
+                }}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="0"
+                center={[(width - 40) / 4, 0]}
+                hasLegend={false}
+              />
+            </View>
+
+            <View style={styles.legendContainer}>
+              {chartData.map((item, index) => (
+                <View key={index} style={styles.legendItem}>
+                  <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                  <Text style={[styles.legendText, { color: theme.text }]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={[styles.legendValue, { color: theme.textLight }]}>
+                    {((item.population / totalExpenses) * 100).toFixed(0)}%
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
@@ -214,25 +253,45 @@ export const DashboardScreen = () => {
           <Text style={[styles.emptyText, { color: theme.textLight }]}>Nenhuma entrada registrada.</Text>
         ) : (
           recentIncomes.map(income => (
-            <TouchableOpacity 
+            <View 
               key={income.id} 
               style={[styles.incomeItem, { backgroundColor: theme.card }]}
-              onPress={() => {
-                setSelectedIncome(income);
-                setIsIncomeModalVisible(true);
-              }}
             >
-              <View style={[styles.incomeIcon, { backgroundColor: theme.success + '20' }]}>
-                <Ionicons name="arrow-up" size={20} color={theme.success} />
+              <View style={styles.incomeLeftContent}>
+                <View style={[styles.incomeIcon, { backgroundColor: theme.success + '20' }]}>
+                  <Ionicons name="arrow-up" size={20} color={theme.success} />
+                </View>
+                <View style={styles.incomeDetails}>
+                  <Text style={[styles.incomeDescription, { color: theme.text }]}>{income.description || 'Entrada'}</Text>
+                  <Text style={[styles.incomeDate, { color: theme.textLight }]}>{formatDate(income.date)}</Text>
+                </View>
               </View>
-              <View style={styles.incomeDetails}>
-                <Text style={[styles.incomeDescription, { color: theme.text }]}>{income.description || 'Entrada'}</Text>
-                <Text style={[styles.incomeDate, { color: theme.textLight }]}>{formatDate(income.date)}</Text>
+
+              <View style={styles.incomeRightContent}>
+                <Text style={[styles.incomeAmount, { color: theme.success }]}>
+                  + {isValuesVisible ? formatCurrency(income.amount) : '••••••'}
+                </Text>
+                
+                <View style={styles.incomeActions}>
+                  <TouchableOpacity 
+                    onPress={() => {
+                      setSelectedIncome(income);
+                      setIsIncomeModalVisible(true);
+                    }}
+                    style={[styles.actionButton, { backgroundColor: theme.primary + '15' }]}
+                  >
+                    <Ionicons name="pencil" size={16} color={theme.primary} />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    onPress={() => handleDeleteIncome(income)}
+                    style={[styles.actionButton, { backgroundColor: theme.danger + '15' }]}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={theme.danger || '#FF5252'} />
+                  </TouchableOpacity>
+                </View>
               </View>
-              <Text style={[styles.incomeAmount, { color: theme.success }]}>
-                + {isValuesVisible ? formatCurrency(income.amount) : '••••••'}
-              </Text>
-            </TouchableOpacity>
+            </View>
           ))
         )}
 
@@ -343,15 +402,57 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   chartContainer: {
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 24,
-    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 12,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  legendColor: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginRight: 6,
+    maxWidth: 100,
+  },
+  legendValue: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    opacity: 0.7,
   },
   sectionHeader: {
     marginBottom: 16,
@@ -368,6 +469,7 @@ const styles = StyleSheet.create({
   incomeItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
@@ -377,13 +479,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  incomeLeftContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  incomeRightContent: {
+    alignItems: 'flex-end',
+  },
   incomeIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   incomeDetails: {
     flex: 1,
@@ -399,6 +509,18 @@ const styles = StyleSheet.create({
   incomeAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  incomeActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   savingsCard: {
     borderRadius: 16,

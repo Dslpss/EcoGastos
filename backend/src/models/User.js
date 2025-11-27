@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema({
       type: Number,
       default: 0,
     },
+    salaryDay: {
+      type: Number,
+    },
+    salaryAmount: {
+      type: Number,
+    },
   },
   settings: {
     isDarkMode: {

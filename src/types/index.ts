@@ -37,8 +37,8 @@ export interface UserProfile {
   name: string;
   email: string;
   savingsGoal?: number;
-  salaryDay?: number; // 1-31
-  salaryAmount?: number; // Fixed salary amount for auto-add
+  salaryDay?: number | null; // 1-31
+  salaryAmount?: number | null; // Fixed salary amount for auto-add
 }
 
 export interface AppSettings {
