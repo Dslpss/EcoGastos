@@ -9,11 +9,16 @@ import { useAuth } from '../context/AuthContext';
 import { EditProfileModal } from '../components/EditProfileModal';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Header } from '../components/Header';
+import { generateFinancialReport } from '../services/pdfService';
 
 export const SettingsScreen = () => {
-  const { userProfile, settings, updateSettings, theme } = useFinance();
+  const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories } = useFinance();
   const { logout, currentUser } = useAuth();
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+
+  // ... (rest of the code)
+
+
   
   const handleClearData = async () => {
     Alert.alert(
@@ -191,6 +196,7 @@ export const SettingsScreen = () => {
             )}
           </View>
 
+
           {/* Data Section */}
           {renderSectionHeader('DADOS & PRIVACIDADE')}
           <View style={[styles.sectionContainer, { backgroundColor: theme.card }]}>
@@ -210,6 +216,48 @@ export const SettingsScreen = () => {
               <Ionicons name="chevron-forward" size={20} color={theme.textLight} />,
               handleClearData,
               '#F44336'
+            )}
+          </View>
+
+          {/* Reports Section */}
+          {renderSectionHeader('RELATÓRIOS')}
+          <View style={[styles.sectionContainer, { backgroundColor: theme.card }]}>
+            {renderItem(
+              'document-text', 
+              'Relatório Financeiro', 
+              'Gerar PDF detalhado',
+              <Ionicons name="chevron-forward" size={20} color={theme.textLight} />,
+              async () => {
+                try {
+                  
+                  // Calculate totals
+                  const totalIncome = incomes.reduce((acc, curr) => acc + curr.amount, 0);
+                  const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+                  
+                  // Prepare transactions (last 20)
+                  const transactions = [
+                    ...expenses.map(e => {
+                      const category = categories.find(c => c.id === e.categoryId);
+                      return { ...e, type: 'expense', category: category ? category.name : 'Geral' };
+                    }),
+                    ...incomes.map(i => ({ ...i, type: 'income', category: 'Receita' }))
+                  ]
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, 20);
+
+                  await generateFinancialReport({
+                    balance,
+                    income: totalIncome,
+                    expenses: totalExpenses,
+                    transactions,
+                    userName: userProfile.name
+                  });
+                } catch (error) {
+                  Alert.alert('Erro', 'Não foi possível gerar o relatório.');
+                  console.error(error);
+                }
+              },
+              '#FF9800'
             )}
           </View>
 
@@ -250,9 +298,12 @@ export const SettingsScreen = () => {
             {renderItem(
               'code-slash', 
               'Desenvolvedor', 
-              'EcoGastos Team',
-              undefined,
-              () => Alert.alert('Sobre', 'Desenvolvido com ❤️ usando React Native e Expo.'),
+              'DennisEmannuel_DEV',
+              <Ionicons name="logo-instagram" size={20} color="#E1306C" />,
+              () => {
+                const { Linking } = require('react-native');
+                Linking.openURL('https://www.instagram.com/programadorbyte/');
+              },
               theme.textLight
             )}
           </View>
