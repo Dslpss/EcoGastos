@@ -33,6 +33,10 @@ const appConfigSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  latest_version: {
+    type: String,
+    default: '1.0.0',
+  },
 }, {
   timestamps: { updatedAt: 'updated_at' }, // Maps updatedAt to updated_at
 });

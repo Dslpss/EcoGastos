@@ -13,6 +13,7 @@ interface AppConfig {
   force_update: boolean;
   show_warning: boolean;
   warning_message: string;
+  latest_version: string;
 }
 
 export const Dashboard = () => {
@@ -155,6 +156,16 @@ export const Dashboard = () => {
                   value={config?.update_message}
                   onChange={(e) => setConfig(prev => prev ? ({ ...prev, update_message: e.target.value }) : null)}
                   rows={2}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Versão Mais Recente</label>
+                <input 
+                  type="text"
+                  value={config?.latest_version || ''}
+                  onChange={(e) => setConfig(prev => prev ? ({ ...prev, latest_version: e.target.value }) : null)}
+                  placeholder="1.0.1"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>

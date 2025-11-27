@@ -43,7 +43,8 @@ router.put('/', auth, async (req, res) => {
       update_url, 
       force_update,
       show_warning,
-      warning_message
+      warning_message,
+      latest_version
     } = req.body;
 
     let config = await AppConfig.findOne();
@@ -61,6 +62,7 @@ router.put('/', auth, async (req, res) => {
     if (force_update !== undefined) config.force_update = force_update;
     if (show_warning !== undefined) config.show_warning = show_warning;
     if (warning_message !== undefined) config.warning_message = warning_message;
+    if (latest_version !== undefined) config.latest_version = latest_version;
 
     await config.save();
 
