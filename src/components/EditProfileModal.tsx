@@ -14,12 +14,16 @@ export const EditProfileModal: React.FC<Props> = ({ visible, onClose }) => {
   const [name, setName] = useState(userProfile.name);
   const [email, setEmail] = useState(userProfile.email);
   const [savingsGoal, setSavingsGoal] = useState(userProfile.savingsGoal?.toString() || '');
+  const [salaryDay, setSalaryDay] = useState(userProfile.salaryDay?.toString() || '');
+  const [salaryAmount, setSalaryAmount] = useState(userProfile.salaryAmount?.toString() || '');
 
   useEffect(() => {
     if (visible) {
       setName(userProfile.name);
       setEmail(userProfile.email);
       setSavingsGoal(userProfile.savingsGoal?.toString() || '');
+      setSalaryDay(userProfile.salaryDay?.toString() || '');
+      setSalaryAmount(userProfile.salaryAmount?.toString() || '');
     }
   }, [userProfile, visible]);
 
@@ -33,7 +37,9 @@ export const EditProfileModal: React.FC<Props> = ({ visible, onClose }) => {
       await updateUserProfile({ 
         name, 
         email,
-        savingsGoal: savingsGoal ? parseFloat(savingsGoal.replace(',', '.')) : 0
+        savingsGoal: savingsGoal ? parseFloat(savingsGoal.replace(',', '.')) : 0,
+        salaryDay: salaryDay ? parseInt(salaryDay) : undefined,
+        salaryAmount: salaryAmount ? parseFloat(salaryAmount.replace(',', '.')) : 0
       });
       onClose();
     } catch (error) {
@@ -102,7 +108,41 @@ export const EditProfileModal: React.FC<Props> = ({ visible, onClose }) => {
                 />
               </View>
 
-              {/* Save Button */}
+              {/* Salary Day Input */}
+              <Text style={[styles.label, { color: theme.textLight }]}>Dia do Pagamento (1-31)</Text>
+              <View style={[styles.inputGroup, { backgroundColor: theme.background }]}>
+                <Ionicons name="calendar-outline" size={20} color={theme.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={salaryDay}
+                  onChangeText={(text) => {
+                    const num = parseInt(text);
+                    if (!text || (num >= 1 && num <= 31)) {
+                      setSalaryDay(text);
+                    }
+                  }}
+                  placeholder="Dia do mês"
+                  placeholderTextColor={theme.textLight}
+                  keyboardType="numeric"
+                  maxLength={2}
+                />
+              </View>
+
+
+
+              {/* Salary Amount Input */}
+              <Text style={[styles.label, { color: theme.textLight }]}>Valor do Salário (R$)</Text>
+              <View style={[styles.inputGroup, { backgroundColor: theme.background }]}>
+                <Ionicons name="cash-outline" size={20} color={theme.primary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={salaryAmount}
+                  onChangeText={setSalaryAmount}
+                  placeholder="0,00"
+                  placeholderTextColor={theme.textLight}
+                  keyboardType="numeric"
+                />
+              </View>
               <TouchableOpacity 
                 style={[styles.saveButtonContainer, { shadowColor: theme.primary }]} 
                 onPress={handleSave}
@@ -142,6 +182,7 @@ const styles = StyleSheet.create({
     marginBottom: 34,
     padding: 24,
     paddingBottom: 24,
+    maxHeight: '85%', // Added to prevent overflow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,

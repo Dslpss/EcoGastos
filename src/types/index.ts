@@ -12,6 +12,7 @@ export interface Expense {
   description: string;
   categoryId: string;
   date: string; // ISO string
+  isRecurring?: boolean; // To distinguish from variable expenses
 }
 
 export interface RecurringBill {
@@ -36,6 +37,8 @@ export interface UserProfile {
   name: string;
   email: string;
   savingsGoal?: number;
+  salaryDay?: number; // 1-31
+  salaryAmount?: number; // Fixed salary amount for auto-add
 }
 
 export interface AppSettings {
@@ -61,6 +64,8 @@ export interface User {
   password?: string; // Optional as we might not store it in frontend state
   profile?: {
     savingsGoal: number;
+    salaryDay?: number;
+    salaryAmount?: number;
   };
   settings?: AppSettings;
 }

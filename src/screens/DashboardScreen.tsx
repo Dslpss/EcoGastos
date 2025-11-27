@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFinance } from '../context/FinanceContext';
+import { Income } from '../types';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-chart-kit';
@@ -15,6 +16,7 @@ const { width } = Dimensions.get('window');
 export const DashboardScreen = () => {
   const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible, userProfile } = useFinance();
   const [isIncomeModalVisible, setIsIncomeModalVisible] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
   const navigation = useNavigation<any>();
 
   const totalExpenses = useMemo(() => {
@@ -212,7 +214,14 @@ export const DashboardScreen = () => {
           <Text style={[styles.emptyText, { color: theme.textLight }]}>Nenhuma entrada registrada.</Text>
         ) : (
           recentIncomes.map(income => (
-            <View key={income.id} style={[styles.incomeItem, { backgroundColor: theme.card }]}>
+            <TouchableOpacity 
+              key={income.id} 
+              style={[styles.incomeItem, { backgroundColor: theme.card }]}
+              onPress={() => {
+                setSelectedIncome(income);
+                setIsIncomeModalVisible(true);
+              }}
+            >
               <View style={[styles.incomeIcon, { backgroundColor: theme.success + '20' }]}>
                 <Ionicons name="arrow-up" size={20} color={theme.success} />
               </View>
@@ -223,7 +232,7 @@ export const DashboardScreen = () => {
               <Text style={[styles.incomeAmount, { color: theme.success }]}>
                 + {isValuesVisible ? formatCurrency(income.amount) : '••••••'}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))
         )}
 
@@ -231,7 +240,11 @@ export const DashboardScreen = () => {
 
       <AddIncomeModal 
         visible={isIncomeModalVisible} 
-        onClose={() => setIsIncomeModalVisible(false)} 
+        onClose={() => {
+          setIsIncomeModalVisible(false);
+          setSelectedIncome(null);
+        }}
+        incomeToEdit={selectedIncome}
       />
     </SafeAreaView>
   );

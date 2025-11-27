@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { Alert } from 'react-native';
 import { FinanceState, Expense, Category, RecurringBill, Income, UserProfile, AppSettings } from '../types';
 import { DEFAULT_CATEGORIES, THEME } from '../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,6 +20,7 @@ interface FinanceContextData {
   deleteExpense: (id: string) => Promise<void>;
   addIncome: (income: Omit<Income, 'id'>) => Promise<void>;
   deleteIncome: (id: string) => Promise<void>;
+  editIncome: (income: Income) => Promise<void>;
   addCategory: (category: Omit<Category, 'id'>) => Promise<void>;
   updateCategory: (category: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
@@ -76,12 +78,105 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         name: currentUser.name,
         email: currentUser.email,
         savingsGoal: currentUser.profile?.savingsGoal || 0,
+        salaryDay: currentUser.profile?.salaryDay,
+        salaryAmount: currentUser.profile?.salaryAmount,
       });
       if (currentUser.settings) {
         setSettings(prev => ({ ...prev, ...currentUser.settings }));
       }
     }
   }, [currentUser]);
+
+  // Check for Payday
+  useEffect(() => {
+    if (userProfile.salaryDay) {
+      checkPayday();
+    }
+  }, [userProfile.salaryDay]);
+
+  const checkPayday = async () => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    
+    if (currentDay === userProfile.salaryDay) {
+      const currentMonthKey = `${today.getMonth()}-${today.getFullYear()}`;
+      const lastAlert = await AsyncStorage.getItem('@eco_gastos_payday_alert');
+      
+      if (lastAlert !== currentMonthKey) {
+        Alert.alert(
+          '💸 Dia do Pagamento!',
+          'Hoje é o dia do seu pagamento. O que deseja fazer?',
+          [
+            { text: 'Mais tarde', style: 'cancel' },
+            { 
+              text: 'Gerar Relatório', 
+              onPress: () => {
+                Alert.alert('Dica', 'Vá em Ajustes > Relatórios para gerar seu PDF detalhado.');
+              } 
+            },
+            {
+              text: 'Limpar Gastos Variáveis',
+              style: 'destructive',
+              onPress: () => {
+                Alert.alert(
+                  'Confirmar Limpeza',
+                  'Isso apagará todos os gastos que NÃO são fixos/recorrentes. Deseja continuar?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { 
+                      text: 'Sim, Limpar', 
+                      style: 'destructive',
+                      onPress: resetMonthlyExpenses
+                    }
+                  ]
+                );
+              }
+            }
+          ]
+        );
+        await AsyncStorage.setItem('@eco_gastos_payday_alert', currentMonthKey);
+      }
+    }
+  };
+
+  const resetMonthlyExpenses = async () => {
+    const expensesToKeep = expenses.filter(e => e.isRecurring);
+    
+    // We do NOT refund the balance. The money spent is gone.
+    // We keep the current balance as the "Carry Over" for the next month.
+    
+    let newBalance = balance;
+    const newIncomes = [];
+
+    // Auto-add Salary if defined
+    if (userProfile.salaryAmount && userProfile.salaryAmount > 0) {
+      const salaryIncome = {
+        id: Date.now().toString(),
+        amount: userProfile.salaryAmount,
+        description: 'Salário',
+        date: new Date().toISOString(),
+      };
+      newIncomes.push(salaryIncome);
+      newBalance += userProfile.salaryAmount;
+      Alert.alert('💰 Salário Adicionado!', `Seu salário de R$ ${userProfile.salaryAmount.toFixed(2)} foi creditado.`);
+    }
+
+    setExpenses(expensesToKeep);
+    setIncomes(newIncomes); 
+    setBalance(newBalance);
+    
+    try {
+      await syncToBackend({ 
+        expenses: expensesToKeep,
+        incomes: newIncomes,
+        balance: newBalance
+      });
+      Alert.alert('Sucesso', 'Mês reiniciado! Seu saldo atual foi mantido como ponto de partida.');
+    } catch (e) {
+      console.error('Failed to reset expenses', e);
+      Alert.alert('Erro', 'Falha ao limpar dados.');
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -211,6 +306,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const editIncome = async (updatedIncome: Income) => {
+    // Calculate difference to update balance
+    const oldIncome = incomes.find(i => i.id === updatedIncome.id);
+    if (!oldIncome) return;
+
+    const difference = updatedIncome.amount - oldIncome.amount;
+
+    setIncomes(prev => prev.map(i => i.id === updatedIncome.id ? updatedIncome : i));
+    setBalance(prev => prev + difference);
+
+    try {
+      await syncToBackend({ 
+        incomes: incomes.map(i => i.id === updatedIncome.id ? updatedIncome : i),
+        balance: balance + difference
+      });
+    } catch (e) {
+      console.error('Failed to edit income', e);
+      // Revert on failure (optional but good practice)
+    }
+  };
+
   const addCategory = async (categoryData: Omit<Category, 'id'>) => {
     const newCategory = { ...categoryData, id: Date.now().toString() };
     setCategories(prev => [...prev, newCategory]);
@@ -314,6 +430,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         description: `Conta: ${bill.name}`,
         categoryId: bill.categoryId,
         date: new Date().toISOString(),
+        isRecurring: true, // Mark as recurring so it persists during reset
       });
 
       // 2. Update Bill
@@ -357,7 +474,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       await authAPI.updateProfile({ 
         name: profile.name, 
-        profile: { savingsGoal: profile.savingsGoal } 
+        profile: { 
+          savingsGoal: profile.savingsGoal,
+          salaryDay: profile.salaryDay,
+          salaryAmount: profile.salaryAmount
+        } 
       });
     } catch (e) {
       console.error('Failed to update profile', e);
@@ -400,6 +521,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       deleteExpense,
       addIncome,
       deleteIncome,
+      editIncome,
       addCategory,
       updateCategory,
       deleteCategory,
