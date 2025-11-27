@@ -13,10 +13,12 @@ export const EditProfileModal: React.FC<Props> = ({ visible, onClose }) => {
   const { userProfile, updateUserProfile } = useFinance();
   const [name, setName] = useState(userProfile.name);
   const [email, setEmail] = useState(userProfile.email);
+  const [savingsGoal, setSavingsGoal] = useState(userProfile.savingsGoal?.toString() || '');
 
   useEffect(() => {
     setName(userProfile.name);
     setEmail(userProfile.email);
+    setSavingsGoal(userProfile.savingsGoal?.toString() || '');
   }, [userProfile, visible]);
 
   const handleSave = () => {
@@ -25,7 +27,11 @@ export const EditProfileModal: React.FC<Props> = ({ visible, onClose }) => {
       return;
     }
 
-    updateUserProfile({ name, email });
+    updateUserProfile({ 
+      name, 
+      email,
+      savingsGoal: savingsGoal ? parseFloat(savingsGoal.replace(',', '.')) : 0
+    });
     onClose();
   };
 
@@ -51,6 +57,15 @@ export const EditProfileModal: React.FC<Props> = ({ visible, onClose }) => {
             placeholder="seu@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
+          />
+
+          <Text style={styles.label}>Meta de Economia Mensal (R$)</Text>
+          <TextInput
+            style={styles.input}
+            value={savingsGoal}
+            onChangeText={setSavingsGoal}
+            placeholder="0,00"
+            keyboardType="numeric"
           />
 
           <View style={styles.buttons}>

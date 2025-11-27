@@ -35,7 +35,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [recurringBills, setRecurringBills] = useState<RecurringBill[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile>({ name: 'Usuário', email: 'usuario@exemplo.com' });
+  const [userProfile, setUserProfile] = useState<UserProfile>({ name: 'Usuário', email: 'usuario@exemplo.com', savingsGoal: 0 });
   const [settings, setSettings] = useState<AppSettings>({ isDarkMode: true, notificationsEnabled: true, biometricsEnabled: false });
   const [isLoading, setIsLoading] = useState(true);
   const [isValuesVisible, setIsValuesVisible] = useState(false); // Hidden by default
@@ -89,7 +89,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return bill;
         });
         setRecurringBills(updatedBills);
-        if (parsedData.userProfile) setUserProfile(parsedData.userProfile);
+        if (parsedData.userProfile) {
+          setUserProfile({
+            ...parsedData.userProfile,
+            savingsGoal: parsedData.userProfile.savingsGoal || 0
+          });
+        }
         if (parsedData.settings) setSettings(parsedData.settings);
       }
     } catch (e) {

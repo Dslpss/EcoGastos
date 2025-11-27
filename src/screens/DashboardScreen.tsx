@@ -12,7 +12,7 @@ import { Header } from '../components/Header';
 const { width } = Dimensions.get('window');
 
 export const DashboardScreen = () => {
-  const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible } = useFinance();
+  const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible, userProfile } = useFinance();
   const [isIncomeModalVisible, setIsIncomeModalVisible] = useState(false);
   const navigation = useNavigation<any>();
 
@@ -28,6 +28,28 @@ export const DashboardScreen = () => {
       })
       .reduce((acc, curr) => acc + curr.amount, 0);
   }, [expenses]);
+
+  const totalIncome = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return incomes
+      .filter(i => {
+        const date = new Date(i.date);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      })
+      .reduce((acc, curr) => acc + curr.amount, 0);
+  }, [incomes]);
+
+  const currentSavings = totalIncome - totalExpenses;
+  const savingsGoal = userProfile.savingsGoal || 0;
+  const savingsProgress = savingsGoal > 0 ? Math.min((currentSavings / savingsGoal) * 100, 100) : 0;
+  
+  // Calculate how much can still be spent while keeping the savings goal
+  // Safe to Spend = (Income - Goal) - Expenses
+  // If result is negative, it means they overspent or haven't earned enough yet
+  const safeToSpend = Math.max(0, (totalIncome - savingsGoal) - totalExpenses);
 
   const pendingBillsCount = useMemo(() => {
     return recurringBills.filter(bill => !bill.isPaid).length;
@@ -104,6 +126,55 @@ export const DashboardScreen = () => {
             <Text style={[styles.summaryValue, { color: theme.text }]}>{pendingBillsCount}</Text>
           </View>
         </View>
+
+        {/* Savings Goal Card */}
+        {savingsGoal > 0 && (
+          <View style={[styles.savingsCard, { backgroundColor: theme.card }]}>
+            <View style={styles.savingsHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: theme.primary + '20', marginBottom: 0 }]}>
+                <Ionicons name="wallet" size={20} color={theme.primary} />
+              </View>
+              <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 0, marginLeft: 10, fontSize: 16 }]}>
+                Meta de Economia
+              </Text>
+            </View>
+            
+            <View style={styles.savingsInfo}>
+              <View>
+                <Text style={[styles.summaryLabel, { color: theme.textLight }]}>Atual</Text>
+                <Text style={[styles.savingsValue, { color: currentSavings >= 0 ? theme.success : theme.danger }]}>
+                  {isValuesVisible ? formatCurrency(currentSavings) : '••••••'}
+                </Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[styles.summaryLabel, { color: theme.textLight }]}>Meta</Text>
+                <Text style={[styles.savingsValue, { color: theme.text }]}>
+                  {isValuesVisible ? formatCurrency(savingsGoal) : '••••••'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.progressBarBackground, { backgroundColor: theme.gray + '30' }]}>
+              <View 
+                style={[
+                  styles.progressBarFill, 
+                  { 
+                    width: `${savingsProgress}%`,
+                    backgroundColor: savingsProgress >= 100 ? theme.success : theme.primary 
+                  }
+                ]} 
+              />
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+              <Text style={[styles.progressText, { color: theme.textLight }]}>
+                {savingsProgress.toFixed(0)}% da meta
+              </Text>
+              <Text style={[styles.progressText, { color: theme.textLight }]}>
+                Pode gastar: <Text style={{ color: theme.success, fontWeight: 'bold' }}>{isValuesVisible ? formatCurrency(safeToSpend) : '••••••'}</Text>
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Chart Section */}
         {chartData.length > 0 && (
@@ -307,5 +378,43 @@ const styles = StyleSheet.create({
   incomeAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  savingsCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  savingsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  savingsInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  savingsValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  progressBarBackground: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    textAlign: 'right',
   },
 });

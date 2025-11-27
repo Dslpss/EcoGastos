@@ -34,6 +34,7 @@ export interface Income {
 export interface UserProfile {
   name: string;
   email: string;
+  savingsGoal?: number;
 }
 
 export interface AppSettings {
