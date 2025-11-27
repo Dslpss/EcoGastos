@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
                   R$ {currency.bid}
                 </Text>
                 <Text style={[styles.widgetLabel, { color: theme.textLight }]}>
-                  Dólar
+                  Cotação Dólar
                 </Text>
               </View>
             </View>

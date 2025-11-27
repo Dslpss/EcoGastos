@@ -12,7 +12,7 @@ import { Header } from '../components/Header';
 import { generateFinancialReport } from '../services/pdfService';
 
 export const SettingsScreen = () => {
-  const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories } = useFinance();
+  const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories, clearData } = useFinance();
   const { logout, currentUser } = useAuth();
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
@@ -30,12 +30,7 @@ export const SettingsScreen = () => {
           text: 'Apagar Tudo', 
           style: 'destructive',
           onPress: async () => {
-            try {
-              await AsyncStorage.clear();
-              Alert.alert('Sucesso', 'Dados apagados. Reinicie o app para surtir efeito.');
-            } catch (e) {
-              Alert.alert('Erro', 'Falha ao limpar dados.');
-            }
+            await clearData();
           }
         }
       ]

@@ -177,4 +177,33 @@ router.delete('/income/:id', auth, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/finance/clear
+// @desc    Clear all finance data
+// @access  Private
+router.delete('/clear', auth, async (req, res) => {
+  try {
+    const financeData = await FinanceData.findOne({ userId: req.userId });
+    
+    if (financeData) {
+      financeData.balance = 0;
+      financeData.expenses = [];
+      financeData.incomes = [];
+      financeData.categories = []; // Or reset to default if preferred
+      financeData.recurringBills = [];
+      await financeData.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Dados limpos com sucesso',
+    });
+  } catch (error) {
+    console.error('Clear data error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erro ao limpar dados' 
+    });
+  }
+});
+
 module.exports = router;

@@ -36,6 +36,7 @@ interface FinanceContextData {
   theme: typeof THEME.light;
   isValuesVisible: boolean;
   toggleValuesVisibility: () => void;
+  clearData: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextData>({} as FinanceContextData);
@@ -507,6 +508,25 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const clearData = async () => {
+    try {
+      await financeAPI.clearData();
+      await AsyncStorage.clear();
+      
+      // Reset local state
+      setBalance(0);
+      setExpenses([]);
+      setIncomes([]);
+      setCategories(DEFAULT_CATEGORIES);
+      setRecurringBills([]);
+      
+      Alert.alert('Sucesso', 'Todos os dados foram apagados.');
+    } catch (e) {
+      console.error('Failed to clear data', e);
+      Alert.alert('Erro', 'Falha ao limpar dados no servidor.');
+    }
+  };
+
   return (
     <FinanceContext.Provider value={{
       balance,
@@ -537,6 +557,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       theme: settings.isDarkMode ? THEME.dark : THEME.light,
       isValuesVisible,
       toggleValuesVisibility,
+      clearData,
     }}>
       {children}
     </FinanceContext.Provider>

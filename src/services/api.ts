@@ -100,6 +100,11 @@ export const financeAPI = {
     const response = await api.delete(`/finance/income/${id}`);
     return response.data;
   },
+
+  clearData: async () => {
+    const response = await api.delete('/finance/clear');
+    return response.data;
+  },
 };
 
 export default api;
