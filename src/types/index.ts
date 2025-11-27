@@ -22,6 +22,7 @@ export interface RecurringBill {
   categoryId: string;
   isPaid: boolean;
   lastPaidDate?: string; // To track monthly payments
+  lastPaymentExpenseId?: string; // To track the expense created for this payment
 }
 
 export interface Income {

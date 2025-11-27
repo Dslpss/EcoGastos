@@ -8,8 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
 
 export const RecurringBillsScreen = () => {
-  const { recurringBills, markBillAsPaid, categories, theme } = useFinance();
+  const { recurringBills, markBillAsPaid, markBillAsUnpaid, deleteRecurringBill, categories, theme } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<any>(null);
 
   const sortedBills = useMemo(() => {
     return [...recurringBills].sort((a, b) => a.dueDay - b.dueDay);
@@ -24,6 +25,33 @@ export const RecurringBillsScreen = () => {
         { text: 'Confirmar', onPress: () => markBillAsPaid(id) }
       ]
     );
+  };
+
+  const handleUnpay = (id: string) => {
+    Alert.alert(
+      'Desfazer Pagamento',
+      'Deseja marcar esta conta como pendente? O lançamento no extrato será removido.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Confirmar', onPress: () => markBillAsUnpaid(id) }
+      ]
+    );
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      'Excluir Conta',
+      'Tem certeza que deseja excluir esta conta fixa?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: () => deleteRecurringBill(id) }
+      ]
+    );
+  };
+
+  const handleEdit = (bill: any) => {
+    setSelectedBill(bill);
+    setModalVisible(true);
   };
 
   const getStatusColor = (bill: any) => {
@@ -48,28 +76,56 @@ export const RecurringBillsScreen = () => {
 
     return (
       <View style={[styles.card, { backgroundColor: theme.card }]}>
-        <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '20' }]}>
-          <Ionicons name="calendar" size={24} color={category?.color || theme.gray} />
-        </View>
+        <View style={styles.cardContent}>
+          <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '20' }]}>
+            <Ionicons name="calendar" size={24} color={category?.color || theme.gray} />
+          </View>
 
-        <View style={styles.infoContainer}>
-          <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
-          <Text style={[styles.dueDate, { color: theme.textLight }]}>Vence dia {item.dueDay}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-            <Text style={[styles.statusText, { color: statusColor }]}>{getStatusText(item)}</Text>
+          <View style={styles.infoContainer}>
+            <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
+            <Text style={[styles.dueDate, { color: theme.textLight }]}>Vence dia {item.dueDay}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+              <Text style={[styles.statusText, { color: statusColor }]}>{getStatusText(item)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.actionContainer}>
+            <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
+            {!item.isPaid ? (
+              <TouchableOpacity 
+                style={[styles.payButton, { backgroundColor: theme.success }]}
+                onPress={() => handlePay(item.id)}
+              >
+                <Text style={styles.payButtonText}>Pagar</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.payButton, { backgroundColor: theme.textLight + '40' }]}
+                onPress={() => handleUnpay(item.id)}
+              >
+                <Text style={[styles.payButtonText, { color: theme.text }]}>Desfazer</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        <View style={styles.actionContainer}>
-          <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
-          {!item.isPaid && (
-            <TouchableOpacity 
-              style={[styles.payButton, { backgroundColor: theme.success }]}
-              onPress={() => handlePay(item.id)}
-            >
-              <Text style={styles.payButtonText}>Pagar</Text>
-            </TouchableOpacity>
-          )}
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: theme.primary + '15', marginRight: 8 }]}
+            onPress={() => handleEdit(item)}
+          >
+            <Ionicons name="create-outline" size={18} color={theme.primary} />
+            <Text style={[styles.actionText, { color: theme.primary }]}>Editar</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: theme.danger + '15' }]}
+            onPress={() => handleDelete(item.id)}
+          >
+            <Ionicons name="trash-outline" size={18} color={theme.danger} />
+            <Text style={[styles.actionText, { color: theme.danger }]}>Excluir</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -98,7 +154,10 @@ export const RecurringBillsScreen = () => {
 
       <TouchableOpacity 
         style={[styles.fab, { backgroundColor: theme.primary, shadowColor: theme.primary }]} 
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          setSelectedBill(null);
+          setModalVisible(true);
+        }}
       >
         <Ionicons name="add" size={32} color="#FFF" />
       </TouchableOpacity>
@@ -106,6 +165,7 @@ export const RecurringBillsScreen = () => {
       <AddRecurringBillModal 
         visible={modalVisible} 
         onClose={() => setModalVisible(false)} 
+        billToEdit={selectedBill}
       />
     </SafeAreaView>
   );
@@ -134,16 +194,23 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
   },
   iconContainer: {
     width: 48,
@@ -217,5 +284,22 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });

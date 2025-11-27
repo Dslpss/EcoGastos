@@ -218,8 +218,9 @@ const styles = StyleSheet.create({
   amountInput: {
     fontSize: 48,
     fontWeight: 'bold',
-    minWidth: 100,
+    minWidth: 120, // Increased minWidth
     textAlign: 'center',
+    paddingHorizontal: 10,
   },
   inputGroup: {
     flexDirection: 'row',

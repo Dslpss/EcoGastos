@@ -74,25 +74,41 @@ export const ExpensesScreen = () => {
   const renderItem = ({ item, index }: { item: any, index: number }) => {
     const category = categories.find(c => c.id === item.categoryId);
     return (
-      <TouchableOpacity 
-        style={[styles.card, { backgroundColor: theme.card }]}
-        onLongPress={() => handleDelete(item.id)}
-        onPress={() => handleEdit(item)}
-        activeOpacity={0.7}
-      >
-        <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '15' }]}>
-          <Ionicons name={category?.icon as any || 'pricetag'} size={20} color={category?.color || theme.gray} />
-        </View>
-        
-        <View style={styles.infoContainer}>
-          <Text style={[styles.description, { color: theme.text }]} numberOfLines={1}>{item.description}</Text>
-          <Text style={[styles.category, { color: theme.textLight }]}>{category?.name || 'Sem Categoria'}</Text>
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <View style={styles.cardContent}>
+          <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '15' }]}>
+            <Ionicons name={category?.icon as any || 'pricetag'} size={20} color={category?.color || theme.gray} />
+          </View>
+          
+          <View style={styles.infoContainer}>
+            <Text style={[styles.description, { color: theme.text }]} numberOfLines={1}>{item.description}</Text>
+            <Text style={[styles.category, { color: theme.textLight }]}>{category?.name || 'Sem Categoria'}</Text>
+          </View>
+
+          <View style={styles.amountContainer}>
+            <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
+          </View>
         </View>
 
-        <View style={styles.amountContainer}>
-          <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: theme.primary + '15', marginRight: 8 }]}
+            onPress={() => handleEdit(item)}
+          >
+            <Ionicons name="create-outline" size={18} color={theme.primary} />
+            <Text style={[styles.actionText, { color: theme.primary }]}>Editar</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: theme.danger + '15' }]}
+            onPress={() => handleDelete(item.id)}
+          >
+            <Ionicons name="trash-outline" size={18} color={theme.danger} />
+            <Text style={[styles.actionText, { color: theme.danger }]}>Excluir</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -229,9 +245,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
     borderRadius: 20,
     marginBottom: 12,
     shadowColor: '#000',
@@ -241,6 +254,29 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.02)',
+    overflow: 'hidden',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   iconContainer: {
     width: 44,

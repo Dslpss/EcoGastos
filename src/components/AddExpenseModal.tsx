@@ -20,7 +20,7 @@ export const AddExpenseModal: React.FC<Props> = ({ visible, onClose, expenseToEd
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const { addExpense, categories, deleteExpense, theme } = useFinance();
+  const { addExpense, updateExpense, categories, deleteExpense, theme } = useFinance();
 
   useEffect(() => {
     if (expenseToEdit) {
@@ -62,8 +62,10 @@ export const AddExpenseModal: React.FC<Props> = ({ visible, onClose, expenseToEd
     };
 
     if (expenseToEdit) {
-      deleteExpense(expenseToEdit.id);
-      addExpense(expenseData);
+      updateExpense({
+        ...expenseData,
+        id: expenseToEdit.id
+      });
     } else {
       addExpense(expenseData);
     }
@@ -266,8 +268,9 @@ const styles = StyleSheet.create({
   amountInput: {
     fontSize: 48,
     fontWeight: 'bold',
-    minWidth: 100,
+    minWidth: 120, // Increased minWidth
     textAlign: 'center',
+    paddingHorizontal: 10,
   },
   inputGroup: {
     flexDirection: 'row',

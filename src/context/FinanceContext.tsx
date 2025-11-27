@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { FinanceState, Expense, Category, RecurringBill, Income, UserProfile, AppSettings } from '../types';
 import { DEFAULT_CATEGORIES, THEME } from '../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForPushNotificationsAsync, scheduleBillNotification, cancelBillNotification, cancelAllNotifications, scheduleAllBillNotifications } from '../utils/notifications';
 
 interface FinanceContextData {
   balance: number;
@@ -11,14 +12,18 @@ interface FinanceContextData {
   recurringBills: RecurringBill[];
   userProfile: UserProfile;
   settings: AppSettings;
-  addExpense: (expense: Omit<Expense, 'id'>) => void;
+  addExpense: (expense: Omit<Expense, 'id'>) => string;
+  updateExpense: (expense: Expense) => void;
   deleteExpense: (id: string) => void;
   addIncome: (income: Omit<Income, 'id'>) => void;
   deleteIncome: (id: string) => void;
   addCategory: (category: Omit<Category, 'id'>) => void;
   addRecurringBill: (bill: Omit<RecurringBill, 'id'>) => void;
+  updateRecurringBill: (bill: RecurringBill) => void;
+  deleteRecurringBill: (id: string) => void;
   updateBalance: (amount: number) => void;
   markBillAsPaid: (id: string) => void;
+  markBillAsUnpaid: (id: string) => void;
   updateUserProfile: (profile: UserProfile) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   isLoading: boolean;
@@ -104,6 +109,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  // Request notification permissions and schedule notifications on mount
+  useEffect(() => {
+    if (!isLoading && settings.notificationsEnabled) {
+      registerForPushNotificationsAsync().then(granted => {
+        if (granted) {
+          scheduleAllBillNotifications(recurringBills);
+        }
+      });
+    }
+  }, [isLoading]);
+
   const saveData = async () => {
     try {
       const data: FinanceState = { balance, expenses, incomes, categories, recurringBills, userProfile, settings };
@@ -117,6 +133,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const newExpense = { ...expenseData, id: Date.now().toString() };
     setExpenses(prev => [newExpense, ...prev]);
     setBalance(prev => prev - newExpense.amount);
+    return newExpense.id;
+  };
+
+  const updateExpense = (updatedExpense: Expense) => {
+    setExpenses(prev => {
+      const oldExpense = prev.find(e => e.id === updatedExpense.id);
+      if (oldExpense) {
+        // Calculate balance difference: (Old Amount - New Amount)
+        // If new amount is higher, balance decreases (diff is negative)
+        // If new amount is lower, balance increases (diff is positive)
+        const diff = oldExpense.amount - updatedExpense.amount;
+        setBalance(current => current + diff);
+        
+        return prev.map(e => e.id === updatedExpense.id ? updatedExpense : e);
+      }
+      return prev;
+    });
   };
 
   const deleteExpense = (id: string) => {
@@ -149,6 +182,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addRecurringBill = (billData: Omit<RecurringBill, 'id'>) => {
     const newBill = { ...billData, id: Date.now().toString() };
     setRecurringBills(prev => [...prev, newBill]);
+    
+    // Schedule notification if enabled
+    if (settings.notificationsEnabled && !newBill.isPaid) {
+      scheduleBillNotification(newBill);
+    }
+  };
+
+  const updateRecurringBill = (updatedBill: RecurringBill) => {
+    setRecurringBills(prev => prev.map(b => b.id === updatedBill.id ? updatedBill : b));
+    
+    // Reschedule notification if enabled
+    if (settings.notificationsEnabled && !updatedBill.isPaid) {
+      scheduleBillNotification(updatedBill);
+    } else {
+      cancelBillNotification(updatedBill.id);
+    }
+  };
+
+  const deleteRecurringBill = (id: string) => {
+    const bill = recurringBills.find(b => b.id === id);
+    if (bill && bill.lastPaymentExpenseId) {
+      deleteExpense(bill.lastPaymentExpenseId);
+    }
+    setRecurringBills(prev => prev.filter(b => b.id !== id));
+    
+    // Cancel notification
+    cancelBillNotification(id);
   };
 
   const updateBalance = (amount: number) => {
@@ -159,7 +219,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const bill = recurringBills.find(b => b.id === id);
     if (bill && !bill.isPaid) {
       // 1. Create Expense
-      addExpense({
+      const expenseId = addExpense({
         amount: bill.amount,
         description: `Conta: ${bill.name}`,
         categoryId: bill.categoryId,
@@ -169,7 +229,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // 2. Update Bill
       setRecurringBills(prev => prev.map(b => {
         if (b.id === id) {
-          return { ...b, isPaid: true, lastPaidDate: new Date().toISOString() };
+          return { 
+            ...b, 
+            isPaid: true, 
+            lastPaidDate: new Date().toISOString(),
+            lastPaymentExpenseId: expenseId
+          };
+        }
+        return b;
+      }));
+    }
+  };
+
+  const markBillAsUnpaid = (id: string) => {
+    const bill = recurringBills.find(b => b.id === id);
+    if (bill && bill.isPaid) {
+      // 1. Remove Expense if it exists
+      if (bill.lastPaymentExpenseId) {
+        deleteExpense(bill.lastPaymentExpenseId);
+      }
+
+      // 2. Update Bill
+      setRecurringBills(prev => prev.map(b => {
+        if (b.id === id) {
+          const { lastPaymentExpenseId, ...rest } = b;
+          return { ...rest, isPaid: false };
         }
         return b;
       }));
@@ -181,7 +265,21 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
+    const oldSettings = settings;
     setSettings(prev => ({ ...prev, ...newSettings }));
+    
+    // Handle notification toggle
+    if ('notificationsEnabled' in newSettings) {
+      if (newSettings.notificationsEnabled) {
+        registerForPushNotificationsAsync().then(granted => {
+          if (granted) {
+            scheduleAllBillNotifications(recurringBills);
+          }
+        });
+      } else {
+        cancelAllNotifications();
+      }
+    }
   };
 
   return (
@@ -194,13 +292,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       userProfile,
       settings,
       addExpense,
+      updateExpense,
       deleteExpense,
       addIncome,
       deleteIncome,
       addCategory,
       addRecurringBill,
+      updateRecurringBill,
+      deleteRecurringBill,
       updateBalance,
       markBillAsPaid,
+      markBillAsUnpaid,
       updateUserProfile,
       updateSettings,
       isLoading,

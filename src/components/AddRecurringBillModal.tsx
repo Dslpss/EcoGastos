@@ -1,21 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Modal, StyleSheet, TouchableOpacity, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFinance } from '../context/FinanceContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { RecurringBill } from '../types';
+
 interface Props {
   visible: boolean;
   onClose: () => void;
+  billToEdit?: RecurringBill | null;
 }
 
-export const AddRecurringBillModal: React.FC<Props> = ({ visible, onClose }) => {
+export const AddRecurringBillModal: React.FC<Props> = ({ visible, onClose, billToEdit }) => {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [dueDay, setDueDay] = useState('');
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   
-  const { addRecurringBill, categories, settings, theme } = useFinance();
+  const { addRecurringBill, updateRecurringBill, categories, settings, theme } = useFinance();
+
+  useEffect(() => {
+    if (billToEdit) {
+      setName(billToEdit.name);
+      setAmount(billToEdit.amount.toString());
+      setCategoryId(billToEdit.categoryId);
+      
+      // Set date to current month/year but with the bill's due day
+      const now = new Date();
+      const billDate = new Date(now.getFullYear(), now.getMonth(), billToEdit.dueDay);
+      setDate(billDate);
+    } else {
+      setName('');
+      setAmount('');
+      setCategoryId('');
+      setDate(new Date());
+    }
+  }, [billToEdit, visible]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -26,31 +49,29 @@ export const AddRecurringBillModal: React.FC<Props> = ({ visible, onClose }) => 
       Alert.alert('Erro', 'Por favor, insira um valor válido.');
       return;
     }
-    const day = Number(dueDay);
-    if (!dueDay || isNaN(day) || day < 1 || day > 31) {
-      Alert.alert('Erro', 'Por favor, insira um dia de vencimento válido (1-31).');
-      return;
-    }
-    if (!categoryId) {
-      Alert.alert('Erro', 'Por favor, selecione uma categoria.');
-      return;
-    }
+    const day = date.getDate();
 
-    addRecurringBill({
-      name,
-      amount: Number(amount),
-      dueDay: day,
-      categoryId,
-      isPaid: false,
-    });
-
-    if (settings.notificationsEnabled) {
-      Alert.alert('Lembrete Definido', `Você será notificado mensalmente no dia ${day} sobre a conta ${name}. (Simulação)`);
+    if (billToEdit) {
+      updateRecurringBill({
+        ...billToEdit,
+        name,
+        amount: Number(amount),
+        dueDay: day,
+        categoryId,
+      });
+    } else {
+      addRecurringBill({
+        name,
+        amount: Number(amount),
+        dueDay: day,
+        categoryId,
+        isPaid: false,
+      });
     }
 
     setName('');
     setAmount('');
-    setDueDay('');
+    setDate(new Date());
     setCategoryId('');
     onClose();
   };
@@ -66,7 +87,9 @@ export const AddRecurringBillModal: React.FC<Props> = ({ visible, onClose }) => 
             
             {/* Header */}
             <View style={styles.header}>
-              <Text style={[styles.title, { color: theme.text }]}>Nova Conta Fixa</Text>
+              <Text style={[styles.title, { color: theme.text }]}>
+                {billToEdit ? 'Editar Conta Fixa' : 'Nova Conta Fixa'}
+              </Text>
               <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: theme.gray + '20' }]}>
                 <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
@@ -102,16 +125,31 @@ export const AddRecurringBillModal: React.FC<Props> = ({ visible, onClose }) => 
               {/* Due Day Input */}
               <View style={[styles.inputGroup, { backgroundColor: theme.background }]}>
                 <Ionicons name="calendar-number-outline" size={20} color={theme.primary} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: theme.text }]}
-                  keyboardType="numeric"
-                  value={dueDay}
-                  onChangeText={setDueDay}
-                  placeholder="Dia do Vencimento (1-31)"
-                  placeholderTextColor={theme.textLight}
-                  maxLength={2}
-                />
+                <TouchableOpacity 
+                  onPress={() => setShowDatePicker(true)}
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  <Text style={[styles.input, { color: theme.text }]}>
+                    Todo dia {date.getDate()}
+                  </Text>
+                </TouchableOpacity>
               </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(Platform.OS === 'ios');
+                    if (selectedDate) {
+                      setDate(selectedDate);
+                    }
+                  }}
+                  maximumDate={new Date(new Date().getFullYear() + 1, 11, 31)}
+                  minimumDate={new Date(2000, 0, 1)}
+                />
+              )}
 
               {/* Categories */}
               <Text style={[styles.sectionLabel, { color: theme.textLight }]}>Categoria</Text>
@@ -235,8 +273,9 @@ const styles = StyleSheet.create({
   amountInput: {
     fontSize: 48,
     fontWeight: 'bold',
-    minWidth: 100,
+    minWidth: 120, // Increased minWidth
     textAlign: 'center',
+    paddingHorizontal: 10,
   },
   inputGroup: {
     flexDirection: 'row',
