@@ -40,6 +40,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+  res.send('EcoGastos API is running 🚀');
+});
+
 // Health check route
 app.get('/health', (req, res) => {
   res.json({ 
