@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Modal } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useAppConfig } from '../context/AppConfigContext';
 import { useFinance } from '../context/FinanceContext';
+import * as Application from 'expo-application';
 
 const { width } = Dimensions.get('window');
 
@@ -12,8 +13,9 @@ interface Props {
 }
 
 export const UpdateScreen: React.FC<Props> = ({ visible, onClose }) => {
-  const { updateMessage, openUpdateUrl, isForceUpdate } = useAppConfig();
+  const { updateMessage, openUpdateUrl, isForceUpdate, latestVersion } = useAppConfig();
   const { theme } = useFinance();
+  const currentVersion = Application.nativeApplicationVersion || '1.0.0';
 
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -28,6 +30,21 @@ export const UpdateScreen: React.FC<Props> = ({ visible, onClose }) => {
           <Text style={[styles.message, { color: theme.textLight }]}>
             {updateMessage || 'Uma nova versão do aplicativo está disponível. Atualize para aproveitar as novidades!'}
           </Text>
+
+          <View style={styles.versionContainer}>
+            <View style={styles.versionRow}>
+              <Ionicons name="phone-portrait-outline" size={16} color="#666" />
+              <Text style={styles.versionLabel}>Versão atual:</Text>
+              <Text style={styles.versionValue}>{currentVersion}</Text>
+            </View>
+            {latestVersion && (
+              <View style={[styles.versionRow, { marginTop: 8 }]}>
+                <Ionicons name="cloud-download-outline" size={16} color="#4CAF50" />
+                <Text style={styles.versionLabel}>Versão disponível:</Text>
+                <Text style={[styles.versionValue, { color: '#4CAF50' }]}>{latestVersion}</Text>
+              </View>
+            )}
+          </View>
 
           <TouchableOpacity 
             style={[styles.button, { backgroundColor: theme.primary }]}
@@ -86,8 +103,32 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
     lineHeight: 24,
+  },
+  versionContainer: {
+    width: '100%',
+    marginBottom: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+  },
+  versionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  versionLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  versionValue: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
   },
   button: {
     flexDirection: 'row',

@@ -25,6 +25,7 @@ interface AppConfigContextData {
   updateUrl: string;
   showWarning: boolean;
   warningMessage: string;
+  latestVersion: string;
   refreshConfig: () => Promise<void>;
   openUpdateUrl: () => void;
 }
@@ -116,6 +117,7 @@ export const AppConfigProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       updateUrl: config?.update_url || '',
       showWarning: config?.show_warning || false,
       warningMessage: config?.warning_message || '',
+      latestVersion: config?.latest_version || '',
       refreshConfig: fetchConfig,
       openUpdateUrl,
     }}>
