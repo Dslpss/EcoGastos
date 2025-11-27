@@ -3,6 +3,8 @@ import { FinanceState, Expense, Category, RecurringBill, Income, UserProfile, Ap
 import { DEFAULT_CATEGORIES, THEME } from '../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushNotificationsAsync, scheduleBillNotification, cancelBillNotification, cancelAllNotifications, scheduleAllBillNotifications } from '../utils/notifications';
+import { financeAPI, authAPI } from '../services/api';
+import { useAuth } from './AuthContext';
 
 interface FinanceContextData {
   balance: number;
@@ -12,20 +14,22 @@ interface FinanceContextData {
   recurringBills: RecurringBill[];
   userProfile: UserProfile;
   settings: AppSettings;
-  addExpense: (expense: Omit<Expense, 'id'>) => string;
-  updateExpense: (expense: Expense) => void;
-  deleteExpense: (id: string) => void;
-  addIncome: (income: Omit<Income, 'id'>) => void;
-  deleteIncome: (id: string) => void;
-  addCategory: (category: Omit<Category, 'id'>) => void;
-  addRecurringBill: (bill: Omit<RecurringBill, 'id'>) => void;
-  updateRecurringBill: (bill: RecurringBill) => void;
-  deleteRecurringBill: (id: string) => void;
+  addExpense: (expense: Omit<Expense, 'id'>) => Promise<string>;
+  updateExpense: (expense: Expense) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
+  addIncome: (income: Omit<Income, 'id'>) => Promise<void>;
+  deleteIncome: (id: string) => Promise<void>;
+  addCategory: (category: Omit<Category, 'id'>) => Promise<void>;
+  updateCategory: (category: Category) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  addRecurringBill: (bill: Omit<RecurringBill, 'id'>) => Promise<void>;
+  updateRecurringBill: (bill: RecurringBill) => Promise<void>;
+  deleteRecurringBill: (id: string) => Promise<void>;
   updateBalance: (amount: number) => void;
-  markBillAsPaid: (id: string) => void;
-  markBillAsUnpaid: (id: string) => void;
-  updateUserProfile: (profile: UserProfile) => void;
-  updateSettings: (settings: Partial<AppSettings>) => void;
+  markBillAsPaid: (id: string) => Promise<void>;
+  markBillAsUnpaid: (id: string) => Promise<void>;
+  updateUserProfile: (profile: UserProfile) => Promise<void>;
+  updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
   isLoading: boolean;
   theme: typeof THEME.light;
   isValuesVisible: boolean;
@@ -35,6 +39,7 @@ interface FinanceContextData {
 const FinanceContext = createContext<FinanceContextData>({} as FinanceContextData);
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, currentUser } = useAuth();
   const [balance, setBalance] = useState(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
@@ -43,183 +48,268 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: 'Usuário', email: 'usuario@exemplo.com', savingsGoal: 0 });
   const [settings, setSettings] = useState<AppSettings>({ isDarkMode: true, notificationsEnabled: true, biometricsEnabled: false });
   const [isLoading, setIsLoading] = useState(true);
-  const [isValuesVisible, setIsValuesVisible] = useState(false); // Hidden by default
+  const [isValuesVisible, setIsValuesVisible] = useState(false);
 
   const toggleValuesVisibility = () => {
     setIsValuesVisible(prev => !prev);
   };
 
-  // Load data on mount
+  // Load data when authenticated
   useEffect(() => {
-    loadData();
-  }, []);
-
-  // Save data whenever it changes
-  useEffect(() => {
-    if (!isLoading) {
-      saveData();
+    if (isAuthenticated) {
+      loadData();
+    } else {
+      // Reset state on logout
+      setBalance(0);
+      setExpenses([]);
+      setIncomes([]);
+      setCategories(DEFAULT_CATEGORIES);
+      setRecurringBills([]);
+      setIsLoading(false);
     }
-  }, [balance, expenses, incomes, categories, recurringBills, userProfile, settings]);
+  }, [isAuthenticated]);
+
+  // Update user profile when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      setUserProfile({
+        name: currentUser.name,
+        email: currentUser.email,
+        savingsGoal: currentUser.profile?.savingsGoal || 0,
+      });
+      if (currentUser.settings) {
+        setSettings(prev => ({ ...prev, ...currentUser.settings }));
+      }
+    }
+  }, [currentUser]);
 
   const loadData = async () => {
+    setIsLoading(true);
     try {
-      const storedData = await AsyncStorage.getItem('@eco_gastos_data');
-      if (storedData) {
-        const parsedData: FinanceState = JSON.parse(storedData);
-        setBalance(parsedData.balance);
-        setExpenses(parsedData.expenses);
-        setIncomes(parsedData.incomes || []);
+      const response = await financeAPI.getFinanceData();
+      if (response.success) {
+        const data = response.data;
+        setBalance(data.balance);
+        setExpenses(data.expenses);
+        setIncomes(data.incomes);
+        setRecurringBills(data.recurringBills);
         
-        // Update default categories with new icons/colors if they exist in storage
-        const loadedCategories = parsedData.categories.map(cat => {
-          const defaultCat = DEFAULT_CATEGORIES.find(dc => dc.id === cat.id);
-          if (defaultCat) {
-            return { ...cat, ...defaultCat };
-          }
-          return cat;
-        });
-        setCategories(loadedCategories);
-        
-        // Check for recurring bills reset
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        
-        const updatedBills = parsedData.recurringBills.map(bill => {
-          if (bill.lastPaidDate) {
-            const lastPaid = new Date(bill.lastPaidDate);
-            if (lastPaid.getMonth() !== currentMonth || lastPaid.getFullYear() !== currentYear) {
-              return { ...bill, isPaid: false };
-            }
-          }
-          return bill;
-        });
-        setRecurringBills(updatedBills);
-        if (parsedData.userProfile) {
-          setUserProfile({
-            ...parsedData.userProfile,
-            savingsGoal: parsedData.userProfile.savingsGoal || 0
-          });
+        // Merge default categories with custom ones
+        if (data.categories && data.categories.length > 0) {
+          setCategories(data.categories);
+        } else {
+          setCategories(DEFAULT_CATEGORIES);
         }
-        if (parsedData.settings) setSettings(parsedData.settings);
       }
     } catch (e) {
-      console.error('Failed to load data', e);
+      console.error('Failed to load data from API', e);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Request notification permissions and schedule notifications on mount
-  useEffect(() => {
-    if (!isLoading && settings.notificationsEnabled) {
-      registerForPushNotificationsAsync().then(granted => {
-        if (granted) {
-          scheduleAllBillNotifications(recurringBills);
-        }
-      });
-    }
-  }, [isLoading]);
-
-  const saveData = async () => {
+  // Sync entire state to backend (helper)
+  const syncToBackend = async (newData: Partial<FinanceState>) => {
     try {
-      const data: FinanceState = { balance, expenses, incomes, categories, recurringBills, userProfile, settings };
-      await AsyncStorage.setItem('@eco_gastos_data', JSON.stringify(data));
+      await financeAPI.updateFinanceData(newData);
     } catch (e) {
-      console.error('Failed to save data', e);
+      console.error('Failed to sync data', e);
     }
   };
 
-  const addExpense = (expenseData: Omit<Expense, 'id'>) => {
+  const addExpense = async (expenseData: Omit<Expense, 'id'>) => {
     const newExpense = { ...expenseData, id: Date.now().toString() };
+    
+    // Optimistic update
     setExpenses(prev => [newExpense, ...prev]);
     setBalance(prev => prev - newExpense.amount);
+    
+    // API Call
+    try {
+      await financeAPI.addExpense(newExpense);
+      // Also update balance on backend
+      await syncToBackend({ balance: balance - newExpense.amount });
+    } catch (e) {
+      console.error('Failed to add expense', e);
+      // Revert on failure (optional, but good practice)
+    }
+    
     return newExpense.id;
   };
 
-  const updateExpense = (updatedExpense: Expense) => {
+  const updateExpense = async (updatedExpense: Expense) => {
+    let balanceDiff = 0;
+    
     setExpenses(prev => {
       const oldExpense = prev.find(e => e.id === updatedExpense.id);
       if (oldExpense) {
-        // Calculate balance difference: (Old Amount - New Amount)
-        // If new amount is higher, balance decreases (diff is negative)
-        // If new amount is lower, balance increases (diff is positive)
-        const diff = oldExpense.amount - updatedExpense.amount;
-        setBalance(current => current + diff);
-        
+        balanceDiff = oldExpense.amount - updatedExpense.amount;
         return prev.map(e => e.id === updatedExpense.id ? updatedExpense : e);
       }
       return prev;
     });
-  };
 
-  const deleteExpense = (id: string) => {
-    const expense = expenses.find(e => e.id === id);
-    if (expense) {
-      setExpenses(prev => prev.filter(e => e.id !== id));
-      setBalance(prev => prev + expense.amount);
+    if (balanceDiff !== 0) {
+      setBalance(prev => prev + balanceDiff);
+    }
+
+    try {
+      // We don't have a specific update endpoint for single expense yet, so sync all
+      // Or create one. For now, let's sync all expenses list + balance
+      // Ideally backend should have update endpoint
+      await syncToBackend({ 
+        expenses: expenses.map(e => e.id === updatedExpense.id ? updatedExpense : e),
+        balance: balance + balanceDiff
+      });
+    } catch (e) {
+      console.error('Failed to update expense', e);
     }
   };
 
-  const addIncome = (incomeData: Omit<Income, 'id'>) => {
+  const deleteExpense = async (id: string) => {
+    const expense = expenses.find(e => e.id === id);
+    if (!expense) return;
+
+    // Optimistic update
+    setExpenses(prev => prev.filter(e => e.id !== id));
+    setBalance(prev => prev + expense.amount);
+
+    try {
+      await financeAPI.deleteExpense(id);
+      await syncToBackend({ balance: balance + expense.amount });
+    } catch (e) {
+      console.error('Failed to delete expense', e);
+    }
+  };
+
+  const addIncome = async (incomeData: Omit<Income, 'id'>) => {
     const newIncome = { ...incomeData, id: Date.now().toString() };
+    
     setIncomes(prev => [newIncome, ...prev]);
     setBalance(prev => prev + newIncome.amount);
-  };
 
-  const deleteIncome = (id: string) => {
-    const income = incomes.find(i => i.id === id);
-    if (income) {
-      setIncomes(prev => prev.filter(i => i.id !== id));
-      setBalance(prev => prev - income.amount);
+    try {
+      await financeAPI.addIncome(newIncome);
+      await syncToBackend({ balance: balance + newIncome.amount });
+    } catch (e) {
+      console.error('Failed to add income', e);
     }
   };
 
-  const addCategory = (categoryData: Omit<Category, 'id'>) => {
-    const newCategory = { ...categoryData, id: Date.now().toString() };
-    setCategories(prev => [...prev, newCategory]);
+  const deleteIncome = async (id: string) => {
+    const income = incomes.find(i => i.id === id);
+    if (!income) return;
+
+    setIncomes(prev => prev.filter(i => i.id !== id));
+    setBalance(prev => prev - income.amount);
+
+    try {
+      await financeAPI.deleteIncome(id);
+      await syncToBackend({ balance: balance - income.amount });
+    } catch (e) {
+      console.error('Failed to delete income', e);
+    }
   };
 
-  const addRecurringBill = (billData: Omit<RecurringBill, 'id'>) => {
+  const addCategory = async (categoryData: Omit<Category, 'id'>) => {
+    const newCategory = { ...categoryData, id: Date.now().toString() };
+    setCategories(prev => [...prev, newCategory]);
+
+    try {
+      await syncToBackend({ categories: [...categories, newCategory] });
+    } catch (e) {
+      console.error('Failed to add category', e);
+    }
+  };
+
+  const updateCategory = async (updatedCategory: Category) => {
+    setCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
+
+    try {
+      await syncToBackend({ 
+        categories: categories.map(c => c.id === updatedCategory.id ? updatedCategory : c) 
+      });
+    } catch (e) {
+      console.error('Failed to update category', e);
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    // Prevent deleting default categories if needed, but UI handles that via isCustom check
+    setCategories(prev => prev.filter(c => c.id !== id));
+
+    try {
+      await syncToBackend({ 
+        categories: categories.filter(c => c.id !== id) 
+      });
+    } catch (e) {
+      console.error('Failed to delete category', e);
+    }
+  };
+
+  const addRecurringBill = async (billData: Omit<RecurringBill, 'id'>) => {
     const newBill = { ...billData, id: Date.now().toString() };
     setRecurringBills(prev => [...prev, newBill]);
     
-    // Schedule notification if enabled
     if (settings.notificationsEnabled && !newBill.isPaid) {
       scheduleBillNotification(newBill);
     }
+
+    try {
+      await syncToBackend({ recurringBills: [...recurringBills, newBill] });
+    } catch (e) {
+      console.error('Failed to add recurring bill', e);
+    }
   };
 
-  const updateRecurringBill = (updatedBill: RecurringBill) => {
+  const updateRecurringBill = async (updatedBill: RecurringBill) => {
     setRecurringBills(prev => prev.map(b => b.id === updatedBill.id ? updatedBill : b));
     
-    // Reschedule notification if enabled
     if (settings.notificationsEnabled && !updatedBill.isPaid) {
       scheduleBillNotification(updatedBill);
     } else {
       cancelBillNotification(updatedBill.id);
     }
+
+    try {
+      await syncToBackend({ 
+        recurringBills: recurringBills.map(b => b.id === updatedBill.id ? updatedBill : b) 
+      });
+    } catch (e) {
+      console.error('Failed to update recurring bill', e);
+    }
   };
 
-  const deleteRecurringBill = (id: string) => {
+  const deleteRecurringBill = async (id: string) => {
     const bill = recurringBills.find(b => b.id === id);
     if (bill && bill.lastPaymentExpenseId) {
-      deleteExpense(bill.lastPaymentExpenseId);
+      await deleteExpense(bill.lastPaymentExpenseId);
     }
-    setRecurringBills(prev => prev.filter(b => b.id !== id));
     
-    // Cancel notification
+    setRecurringBills(prev => prev.filter(b => b.id !== id));
     cancelBillNotification(id);
+
+    try {
+      // We can use syncToBackend for now as we didn't make specific delete endpoint for bills yet
+      // Or we can add it to API. Let's use sync for simplicity as per plan
+      await syncToBackend({ 
+        recurringBills: recurringBills.filter(b => b.id !== id) 
+      });
+    } catch (e) {
+      console.error('Failed to delete recurring bill', e);
+    }
   };
 
   const updateBalance = (amount: number) => {
     setBalance(amount);
+    syncToBackend({ balance: amount });
   };
 
-  const markBillAsPaid = (id: string) => {
+  const markBillAsPaid = async (id: string) => {
     const bill = recurringBills.find(b => b.id === id);
     if (bill && !bill.isPaid) {
       // 1. Create Expense
-      const expenseId = addExpense({
+      const expenseId = await addExpense({
         amount: bill.amount,
         description: `Conta: ${bill.name}`,
         categoryId: bill.categoryId,
@@ -227,48 +317,56 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
 
       // 2. Update Bill
-      setRecurringBills(prev => prev.map(b => {
-        if (b.id === id) {
-          return { 
-            ...b, 
-            isPaid: true, 
-            lastPaidDate: new Date().toISOString(),
-            lastPaymentExpenseId: expenseId
-          };
-        }
-        return b;
-      }));
+      const updatedBill = { 
+        ...bill, 
+        isPaid: true, 
+        lastPaidDate: new Date().toISOString(),
+        lastPaymentExpenseId: expenseId
+      };
+
+      setRecurringBills(prev => prev.map(b => b.id === id ? updatedBill : b));
+      
+      await syncToBackend({
+        recurringBills: recurringBills.map(b => b.id === id ? updatedBill : b)
+      });
     }
   };
 
-  const markBillAsUnpaid = (id: string) => {
+  const markBillAsUnpaid = async (id: string) => {
     const bill = recurringBills.find(b => b.id === id);
     if (bill && bill.isPaid) {
-      // 1. Remove Expense if it exists
+      // 1. Remove Expense
       if (bill.lastPaymentExpenseId) {
-        deleteExpense(bill.lastPaymentExpenseId);
+        await deleteExpense(bill.lastPaymentExpenseId);
       }
 
       // 2. Update Bill
-      setRecurringBills(prev => prev.map(b => {
-        if (b.id === id) {
-          const { lastPaymentExpenseId, ...rest } = b;
-          return { ...rest, isPaid: false };
-        }
-        return b;
-      }));
+      const { lastPaymentExpenseId, ...rest } = bill;
+      const updatedBill = { ...rest, isPaid: false };
+
+      setRecurringBills(prev => prev.map(b => b.id === id ? updatedBill : b));
+
+      await syncToBackend({
+        recurringBills: recurringBills.map(b => b.id === id ? updatedBill : b)
+      });
     }
   };
 
-  const updateUserProfile = (profile: UserProfile) => {
+  const updateUserProfile = async (profile: UserProfile) => {
     setUserProfile(profile);
+    try {
+      await authAPI.updateProfile({ 
+        name: profile.name, 
+        profile: { savingsGoal: profile.savingsGoal } 
+      });
+    } catch (e) {
+      console.error('Failed to update profile', e);
+    }
   };
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    const oldSettings = settings;
+  const updateSettings = async (newSettings: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
     
-    // Handle notification toggle
     if ('notificationsEnabled' in newSettings) {
       if (newSettings.notificationsEnabled) {
         registerForPushNotificationsAsync().then(granted => {
@@ -279,6 +377,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } else {
         cancelAllNotifications();
       }
+    }
+
+    try {
+      await authAPI.updateProfile({ settings: { ...settings, ...newSettings } });
+    } catch (e) {
+      console.error('Failed to update settings', e);
     }
   };
 
@@ -297,6 +401,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addIncome,
       deleteIncome,
       addCategory,
+      updateCategory,
+      deleteCategory,
       addRecurringBill,
       updateRecurringBill,
       deleteRecurringBill,

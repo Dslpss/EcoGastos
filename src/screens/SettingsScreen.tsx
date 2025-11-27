@@ -5,12 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFinance } from '../context/FinanceContext';
+import { useAuth } from '../context/AuthContext';
 import { EditProfileModal } from '../components/EditProfileModal';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Header } from '../components/Header';
 
 export const SettingsScreen = () => {
   const { userProfile, settings, updateSettings, theme } = useFinance();
+  const { logout, currentUser } = useAuth();
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   
   const handleClearData = async () => {
@@ -72,6 +74,23 @@ export const SettingsScreen = () => {
       );
     }
     updateSettings({ notificationsEnabled: value });
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sair',
+      'Tem certeza que deseja sair da sua conta?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Sair', 
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          }
+        }
+      ]
+    );
   };
 
   const renderSectionHeader = (title: string) => (
@@ -191,6 +210,28 @@ export const SettingsScreen = () => {
               <Ionicons name="chevron-forward" size={20} color={theme.textLight} />,
               handleClearData,
               '#F44336'
+            )}
+          </View>
+
+          {/* Account Section */}
+          {renderSectionHeader('CONTA')}
+          <View style={[styles.sectionContainer, { backgroundColor: theme.card }]}>
+            {renderItem(
+              'person-circle', 
+              'Usuário Logado', 
+              currentUser?.email || userProfile.email,
+              undefined,
+              undefined,
+              '#4A90E2'
+            )}
+            <View style={[styles.separator, { backgroundColor: theme.gray }]} />
+            {renderItem(
+              'log-out', 
+              'Sair da Conta', 
+              'Fazer logout do aplicativo',
+              <Ionicons name="chevron-forward" size={20} color={theme.textLight} />,
+              handleLogout,
+              '#FF5252'
             )}
           </View>
 

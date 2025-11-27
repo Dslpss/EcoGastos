@@ -53,3 +53,20 @@ export interface FinanceState {
   userProfile: UserProfile;
   settings: AppSettings;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password?: string; // Optional as we might not store it in frontend state
+  profile?: {
+    savingsGoal: number;
+  };
+  settings?: AppSettings;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  currentUser: User | null;
+  isLoading: boolean;
+}

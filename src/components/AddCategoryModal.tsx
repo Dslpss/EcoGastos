@@ -4,9 +4,12 @@ import { useFinance } from '../context/FinanceContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { Category } from '../types';
+
 interface Props {
   visible: boolean;
   onClose: () => void;
+  categoryToEdit?: Category;
 }
 
 const AVAILABLE_COLORS = [
@@ -19,11 +22,26 @@ const AVAILABLE_ICONS = [
   'home', 'cart', 'airplane', 'build', 'shirt', 'gift', 'fitness', 'paw', 'cafe', 'beer'
 ];
 
-export const AddCategoryModal: React.FC<Props> = ({ visible, onClose }) => {
+export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryToEdit }) => {
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
   const [selectedIcon, setSelectedIcon] = useState(AVAILABLE_ICONS[0]);
-  const { addCategory, theme } = useFinance();
+  const { addCategory, updateCategory, deleteCategory, theme } = useFinance();
+
+  // Reset or fill form when modal opens
+  React.useEffect(() => {
+    if (visible) {
+      if (categoryToEdit) {
+        setName(categoryToEdit.name);
+        setSelectedColor(categoryToEdit.color);
+        setSelectedIcon(categoryToEdit.icon || 'pricetag');
+      } else {
+        setName('');
+        setSelectedColor(AVAILABLE_COLORS[0]);
+        setSelectedIcon(AVAILABLE_ICONS[0]);
+      }
+    }
+  }, [visible, categoryToEdit]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -32,19 +50,49 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose }) => {
     }
 
     try {
-      await addCategory({
-        name,
-        color: selectedColor,
-        icon: selectedIcon,
-        isCustom: true,
-      });
-      setName('');
-      setSelectedColor(AVAILABLE_COLORS[0]);
-      setSelectedIcon(AVAILABLE_ICONS[0]);
+      if (categoryToEdit) {
+        await updateCategory({
+          ...categoryToEdit,
+          name,
+          color: selectedColor,
+          icon: selectedIcon,
+        });
+      } else {
+        await addCategory({
+          name,
+          color: selectedColor,
+          icon: selectedIcon,
+          isCustom: true,
+        });
+      }
       onClose();
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível salvar a categoria.');
     }
+  };
+
+  const handleDelete = () => {
+    if (!categoryToEdit) return;
+
+    Alert.alert(
+      'Excluir Categoria',
+      'Tem certeza que deseja excluir esta categoria? Os gastos associados permanecerão, mas sem categoria.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Excluir', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await deleteCategory(categoryToEdit.id);
+              onClose();
+            } catch (error) {
+              Alert.alert('Erro', 'Não foi possível excluir a categoria.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -58,7 +106,9 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose }) => {
             
             {/* Header */}
             <View style={styles.header}>
-              <Text style={[styles.title, { color: theme.text }]}>Nova Categoria</Text>
+              <Text style={[styles.title, { color: theme.text }]}>
+                {categoryToEdit ? 'Editar Categoria' : 'Nova Categoria'}
+              </Text>
               <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: theme.gray + '20' }]}>
                 <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
@@ -75,7 +125,7 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose }) => {
                   onChangeText={setName}
                   placeholder="Nome da categoria (ex: Viagens)"
                   placeholderTextColor={theme.textLight}
-                  autoFocus
+                  autoFocus={!categoryToEdit}
                 />
               </View>
 
@@ -122,22 +172,37 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose }) => {
                 ))}
               </View>
 
-              {/* Save Button */}
-              <TouchableOpacity 
-                style={[styles.saveButtonContainer, { shadowColor: selectedColor }]} 
-                onPress={handleSave}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={[selectedColor, selectedColor + 'CC']}
-                  style={styles.saveButton}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+              {/* Action Buttons */}
+              <View style={{ gap: 12 }}>
+                <TouchableOpacity 
+                  style={[styles.saveButtonContainer, { shadowColor: selectedColor }]} 
+                  onPress={handleSave}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.saveButtonText}>Salvar Categoria</Text>
-                  <Ionicons name="checkmark-circle" size={24} color="#FFF" style={styles.saveIcon} />
-                </LinearGradient>
-              </TouchableOpacity>
+                  <LinearGradient
+                    colors={[selectedColor, selectedColor + 'CC']}
+                    style={styles.saveButton}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Text style={styles.saveButtonText}>
+                      {categoryToEdit ? 'Atualizar Categoria' : 'Salvar Categoria'}
+                    </Text>
+                    <Ionicons name="checkmark-circle" size={24} color="#FFF" style={styles.saveIcon} />
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                {categoryToEdit && categoryToEdit.isCustom && (
+                  <TouchableOpacity 
+                    style={styles.deleteButton} 
+                    onPress={handleDelete}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.deleteButtonText}>Excluir Categoria</Text>
+                    <Ionicons name="trash-outline" size={20} color="#FF5252" />
+                  </TouchableOpacity>
+                )}
+              </View>
 
             </ScrollView>
           </View>
@@ -272,5 +337,21 @@ const styles = StyleSheet.create({
   },
   saveIcon: {
     marginLeft: 4,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FF5252',
+    marginTop: 8,
+  },
+  deleteButtonText: {
+    color: '#FF5252',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
   },
 });

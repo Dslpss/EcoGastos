@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider } from './src/context/AuthContext';
 import { FinanceProvider, useFinance } from './src/context/FinanceContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -74,10 +75,13 @@ const styles = StyleSheet.create({
 export default function App() {
   return (
     <SafeAreaProvider>
-      <FinanceProvider>
-        <AuthWrapper />
-        <StatusBar style="auto" />
-      </FinanceProvider>
+      <AuthProvider>
+        <FinanceProvider>
+          <AuthWrapper />
+          <StatusBar style="auto" />
+        </FinanceProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
+

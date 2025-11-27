@@ -7,14 +7,31 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
 
+import { Category } from '../types';
+
 export const CategoriesScreen = () => {
   const { categories, theme } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={[styles.card, { backgroundColor: theme.card }]}>
+  const handleCategoryPress = (category: Category) => {
+    setSelectedCategory(category);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedCategory(undefined);
+  };
+
+  const renderItem = ({ item }: { item: Category }) => (
+    <TouchableOpacity 
+      style={[styles.card, { backgroundColor: theme.card }]}
+      onPress={() => handleCategoryPress(item)}
+      activeOpacity={0.7}
+    >
       <View style={[styles.colorContainer, { backgroundColor: item.color + '20' }]}>
-        <Ionicons name={item.icon || 'pricetag'} size={32} color={item.color} />
+        <Ionicons name={(item.icon || 'pricetag') as any} size={32} color={item.color} />
       </View>
       <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
       {item.isCustom && (
@@ -22,7 +39,7 @@ export const CategoriesScreen = () => {
           <Text style={[styles.badgeText, { color: theme.primary }]}>Personalizada</Text>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -39,34 +56,35 @@ export const CategoriesScreen = () => {
         />
 
         <FlatList
-        data={categories}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
-      />
+          data={categories}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
+        />
 
-      <TouchableOpacity 
-        style={[styles.fab, { shadowColor: theme.primary }]} 
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={[theme.primary, theme.secondary]}
-          style={styles.fabGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <TouchableOpacity 
+          style={[styles.fab, { shadowColor: theme.primary }]} 
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.8}
         >
-          <Ionicons name="add" size={32} color="#FFF" />
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={[theme.primary, theme.secondary]}
+            style={styles.fabGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name="add" size={32} color="#FFF" />
+          </LinearGradient>
+        </TouchableOpacity>
 
-      <AddCategoryModal 
-        visible={modalVisible} 
-        onClose={() => setModalVisible(false)} 
-      />
+        <AddCategoryModal 
+          visible={modalVisible} 
+          onClose={handleCloseModal}
+          categoryToEdit={selectedCategory}
+        />
       </SafeAreaView>
     </View>
   );
