@@ -1,25 +1,44 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useFinance } from '../context/FinanceContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useWeather } from '../hooks/useWeather';
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
   showProfile?: boolean;
   rightAction?: React.ReactNode;
+  showWeather?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, rightAction }) => {
+export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, rightAction, showWeather = true }) => {
   const { theme, isValuesVisible, toggleValuesVisibility } = useFinance();
+  const { weather, loading } = useWeather();
   const navigation = useNavigation<any>();
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.textContainer}>
+          {showWeather && weather && (
+            <View style={styles.weatherContainer}>
+              <Text style={styles.weatherIcon}>{weather.icon}</Text>
+              <View>
+                <Text style={[styles.weatherTemp, { color: theme.text }]}>
+                  {weather.temperature}°C
+                </Text>
+                <Text style={[styles.weatherCity, { color: theme.textLight }]}>
+                  {weather.city}
+                </Text>
+              </View>
+            </View>
+          )}
+          {showWeather && loading && (
+            <ActivityIndicator size="small" color={theme.primary} style={{ marginBottom: 8 }} />
+          )}
           {subtitle && (
             <Text style={[styles.subtitle, { color: theme.textLight }]}>
               {subtitle}
@@ -137,5 +156,23 @@ const styles = StyleSheet.create({
   },
   rightAction: {
     marginLeft: 12,
+  },
+  weatherContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  weatherIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  weatherTemp: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  weatherCity: {
+    fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.7,
   },
 });
