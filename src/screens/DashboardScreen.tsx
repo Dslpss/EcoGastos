@@ -5,6 +5,7 @@ import { useFinance } from '../context/FinanceContext';
 import { Income } from '../types';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { PieChart } from 'react-native-chart-kit';
 import { AddIncomeModal } from '../components/AddIncomeModal';
 import { useNavigation } from '@react-navigation/native';
@@ -255,6 +256,9 @@ export const DashboardScreen = () => {
         {/* Recent Incomes */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Entradas Recentes</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Incomes')}>
+            <Text style={{ color: theme.primary, fontWeight: '600' }}>Ver todas</Text>
+          </TouchableOpacity>
         </View>
 
         {recentIncomes.length === 0 ? (
@@ -266,9 +270,12 @@ export const DashboardScreen = () => {
               style={[styles.incomeItem, { backgroundColor: theme.card }]}
             >
               <View style={styles.incomeLeftContent}>
-                <View style={[styles.incomeIcon, { backgroundColor: theme.success + '20' }]}>
+                <LinearGradient
+                  colors={[theme.success + '20', theme.success + '10']}
+                  style={styles.incomeIcon}
+                >
                   <Ionicons name="arrow-up" size={20} color={theme.success} />
-                </View>
+                </LinearGradient>
                 <View style={styles.incomeDetails}>
                   <Text style={[styles.incomeDescription, { color: theme.text }]}>{income.description || 'Entrada'}</Text>
                   <Text style={[styles.incomeDate, { color: theme.textLight }]}>{formatDate(income.date)}</Text>
@@ -463,12 +470,14 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 16,
   },
   emptyText: {
     textAlign: 'center',
@@ -486,6 +495,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
   },
   incomeLeftContent: {
     flexDirection: 'row',
@@ -501,23 +512,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   incomeDetails: {
     flex: 1,
   },
   incomeDescription: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   incomeDate: {
     fontSize: 12,
   },
   incomeAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '800',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   incomeActions: {
     flexDirection: 'row',
