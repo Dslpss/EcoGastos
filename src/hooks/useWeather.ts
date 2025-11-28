@@ -7,6 +7,8 @@ interface WeatherData {
   city: string;
   condition: string;
   icon: any; // Ionicons name
+  humidity?: number;
+  windSpeed?: number;
 }
 
 // Global cache to persist data between navigations
@@ -128,14 +130,14 @@ export const useWeather = () => {
       }
 
       // Fetch weather data from Open-Meteo (free, no API key needed!)
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto`;
       console.log('🌐 Fetching weather from Open-Meteo...');
 
       const response = await fetch(url);
       const data = await response.json();
       console.log('📦 Weather response:', response.ok, data);
 
-      if (response.ok && data.current_weather) {
+      if (response.ok && data.current) {
         let cityName = 'Sua localização';
 
         // Only do reverse geocoding if user didn't manually specify a city
@@ -169,10 +171,12 @@ export const useWeather = () => {
         }
 
         const newWeather = {
-          temperature: Math.round(data.current_weather.temperature),
+          temperature: Math.round(data.current.temperature_2m),
           city: cityName,
-          condition: getWeatherCondition(data.current_weather.weathercode),
-          icon: getWeatherIconFromCode(data.current_weather.weathercode),
+          condition: getWeatherCondition(data.current.weather_code),
+          icon: getWeatherIconFromCode(data.current.weather_code),
+          humidity: Math.round(data.current.relative_humidity_2m),
+          windSpeed: Math.round(data.current.wind_speed_10m),
         };
 
         setWeather(newWeather);

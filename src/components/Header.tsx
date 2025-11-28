@@ -7,6 +7,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useWeather } from '../hooks/useWeather';
 import { useCurrency } from '../hooks/useCurrency';
 import { WeatherDetailModal } from './WeatherDetailModal';
+import { CurrencyDetailModal } from './CurrencyDetailModal';
+import { RotatingWeatherWidget } from './RotatingWeatherWidget';
+import { RotatingCurrencyWidget } from './RotatingCurrencyWidget';
 
 
 interface HeaderProps {
@@ -23,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
   const { currency } = useCurrency();
   const navigation = useNavigation<any>();
   const [isCityModalVisible, setIsCityModalVisible] = React.useState(false);
+  const [isCurrencyModalVisible, setIsCurrencyModalVisible] = React.useState(false);
 
   return (
     <View style={styles.container}>
@@ -83,37 +87,20 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
       {showWeather && (weather || currency) && (
         <View style={styles.widgetsContainer}>
           {weather && (
-            <TouchableOpacity 
-              style={[styles.widget, { backgroundColor: theme.card }]}
+            <RotatingWeatherWidget 
+              weather={weather}
+              theme={theme}
               onPress={() => setIsCityModalVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={weather.icon} size={24} color={theme.primary} style={{ marginRight: 8 }} />
-              <View>
-                <Text style={[styles.widgetValue, { color: theme.text }]}>
-                  {weather.temperature}°C
-                </Text>
-                <Text style={[styles.widgetLabel, { color: theme.textLight }]}>
-                  {weather.city.split(',')[0]}
-                </Text>
-              </View>
-            </TouchableOpacity>
+            />
           )}
 
           {weather && currency && <View style={{ width: 12 }} />}
 
           {currency && (
-            <View style={[styles.widget, { backgroundColor: theme.card }]}>
-              <Ionicons name="cash-outline" size={24} color={theme.success} style={{ marginRight: 8 }} />
-              <View>
-                <Text style={[styles.widgetValue, { color: theme.text }]}>
-                  R$ {currency.bid}
-                </Text>
-                <Text style={[styles.widgetLabel, { color: theme.textLight }]}>
-                  Cotação Dólar
-                </Text>
-              </View>
-            </View>
+            <RotatingCurrencyWidget 
+              theme={theme}
+              onPress={() => setIsCurrencyModalVisible(true)}
+            />
           )}
         </View>
       )}
@@ -127,6 +114,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
         onClose={() => setIsCityModalVisible(false)} 
         currentCity={userCity}
         onUpdateCity={updateCity}
+      />
+
+      <CurrencyDetailModal 
+        visible={isCurrencyModalVisible} 
+        onClose={() => setIsCurrencyModalVisible(false)} 
       />
     </View>
   );
