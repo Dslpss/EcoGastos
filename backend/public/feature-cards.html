@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Cards - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .cards-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .card-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .card-info h3 {
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .card-info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card-status {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .card-order {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .btn-edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .empty-state {
+            background: white;
+            padding: 60px 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #666;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Feature Cards</h1>
+            <p>Gerencie os cards promocionais exibidos no app</p>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="openModal()">+ Novo Card</button>
+            <button class="btn btn-secondary" onclick="loadCards()">🔄 Atualizar</button>
+        </div>
+
+        <div id="cardsContainer" class="cards-grid">
+            <!-- Cards will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="cardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Novo Feature Card</h2>
+            </div>
+            <form id="cardForm">
+                <input type="hidden" id="cardId">
+                
+                <div class="form-group">
+                    <label>Título *</label>
+                    <input type="text" id="title" required placeholder="Ex: Configure suas Metas">
+                </div>
+
+                <div class="form-group">
+                    <label>Descrição *</label>
+                    <textarea id="description" required placeholder="Ex: Defina metas de economia mensal"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ícone (Ionicons) *</label>
+                        <select id="icon" required>
+                            <option value="star-outline">⭐ star-outline</option>
+                            <option value="target-outline">🎯 target-outline</option>
+                            <option value="trending-up-outline">📈 trending-up-outline</option>
+                            <option value="bulb-outline">💡 bulb-outline</option>
+                            <option value="gift-outline">🎁 gift-outline</option>
+                            <option value="rocket-outline">🚀 rocket-outline</option>
+                            <option value="heart-outline">❤️ heart-outline</option>
+                            <option value="trophy-outline">🏆 trophy-outline</option>
+                            <option value="wallet-outline">👛 wallet-outline</option>
+                            <option value="card-outline">💳 card-outline</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ordem</label>
+                        <input type="number" id="order" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cor Principal</label>
+                        <input type="color" id="color" value="#6366F1">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cor de Fundo</label>
+                        <input type="color" id="backgroundColor" value="#EEF2FF">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Ação *</label>
+                        <select id="actionType" required>
+                            <option value="navigate">Navegar para Tela</option>
+                            <option value="modal">Abrir Modal</option>
+                            <option value="external">Link Externo</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Target da Ação *</label>
+                        <input type="text" id="actionTarget" required placeholder="Ex: Goals ou https://...">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enabled" checked>
+                        <label for="enabled">Card Ativo</label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let authToken = localStorage.getItem('token');
+
+        // Load cards on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCards();
+        });
+
+        async function loadCards() {
+            try {
+                const response = await fetch(`${API_URL}/admin/feature-cards`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load cards');
+
+                const cards = await response.json();
+                renderCards(cards);
+            } catch (error) {
+                console.error('Error loading cards:', error);
+                alert('Erro ao carregar cards. Verifique se está autenticado.');
+            }
+        }
+
+        function renderCards(cards) {
+            const container = document.getElementById('cardsContainer');
+            
+            if (cards.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Nenhum card criado</h3>
+                        <p>Clique em "Novo Card" para criar seu primeiro feature card</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cards.map(card => `
+                <div class="card-item">
+                    <div class="card-icon" style="background-color: ${card.backgroundColor}; color: ${card.color}">
+                        ${getIconEmoji(card.icon)}
+                    </div>
+                    <div class="card-info">
+                        <h3>${card.title}</h3>
+                        <p>${card.description}</p>
+                    </div>
+                    <span class="card-status ${card.enabled ? 'status-active' : 'status-inactive'}">
+                        ${card.enabled ? 'Ativo' : 'Inativo'}
+                    </span>
+                    <span class="card-order">#${card.order}</span>
+                    <div class="card-actions">
+                        <button class="btn btn-small btn-edit" onclick="editCard('${card._id}')">Editar</button>
+                        <button class="btn btn-small" onclick="toggleCard('${card._id}', ${!card.enabled})">
+                            ${card.enabled ? 'Desativar' : 'Ativar'}
+                        </button>
+                        <button class="btn btn-small btn-delete" onclick="deleteCard('${card._id}')">Deletar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getIconEmoji(iconName) {
+            const emojiMap = {
+                'star-outline': '⭐',
+                'target-outline': '🎯',
+                'trending-up-outline': '📈',
+                'bulb-outline': '💡',
+                'gift-outline': '🎁',
+                'rocket-outline': '🚀',
+                'heart-outline': '❤️',
+                'trophy-outline': '🏆',
+                'wallet-outline': '👛',
+                'card-outline': '💳'
+            };
+            return emojiMap[iconName] || '⭐';
+        }
+
+        function openModal(cardData = null) {
+            const modal = document.getElementById('cardModal');
+            const form = document.getElementById('cardForm');
+            const title = document.getElementById('modalTitle');
+
+            if (cardData) {
+                title.textContent = 'Editar Feature Card';
+                document.getElementById('cardId').value = cardData._id;
+                document.getElementById('title').value = cardData.title;
+                document.getElementById('description').value = cardData.description;
+                document.getElementById('icon').value = cardData.icon;
+                document.getElementById('color').value = cardData.color;
+                document.getElementById('backgroundColor').value = cardData.backgroundColor;
+                document.getElementById('order').value = cardData.order;
+                document.getElementById('actionType').value = cardData.action.type;
+                document.getElementById('actionTarget').value = cardData.action.target;
+                document.getElementById('enabled').checked = cardData.enabled;
+            } else {
+                title.textContent = 'Novo Feature Card';
+                form.reset();
+                document.getElementById('cardId').value = '';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('cardModal').classList.remove('active');
+        }
+
+        document.getElementById('cardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const cardId = document.getElementById('cardId').value;
+            const cardData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                icon: document.getElementById('icon').value,
+                color: document.getElementById('color').value,
+                backgroundColor: document.getElementById('backgroundColor').value,
+                order: parseInt(document.getElementById('order').value),
+                enabled: document.getElementById('enabled').checked,
+                action: {
+                    type: document.getElementById('actionType').value,
+                    target: document.getElementById('actionTarget').value,
+                }
+            };
+
+            try {
+                const url = cardId 
+                    ? `${API_URL}/admin/feature-cards/${cardId}`
+                    : `${API_URL}/admin/feature-cards`;
+                
+                const method = cardId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(cardData)
+                });
+
+                if (!response.ok) throw new Error('Failed to save card');
+
+                closeModal();
+                loadCards();
+                alert('Card salvo com sucesso!');
+            } catch (error) {
+                console.error('Error saving card:', error);
+                alert('Erro ao salvar card');
+            }
+        });
+
+        async function editCard(cardId) {
+            try {
+                const response = await fetch(`${API_URL}/admin/feature-cards`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const cards = await response.json();
+                const card = cards.find(c => c._id === cardId);
+                
+                if (card) {
+                    openModal(card);
+                }
+            } catch (error) {
+                console.error('Error loading card:', error);
+            }
+        }
+
+        async function toggleCard(cardId, newStatus) {
+            try {
+                const response = await fetch(`${API_URL}/admin/feature-cards/${cardId}/toggle`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to toggle card');
+
+                loadCards();
+            } catch (error) {
+                console.error('Error toggling card:', error);
+                alert('Erro ao alterar status do card');
+            }
+        }
+
+        async function deleteCard(cardId) {
+            if (!confirm('Tem certeza que deseja deletar este card?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/admin/feature-cards/${cardId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to delete card');
+
+                loadCards();
+                alert('Card deletado com sucesso!');
+            } catch (error) {
+                console.error('Error deleting card:', error);
+                alert('Erro ao deletar card');
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('cardModal').addEventListener('click', (e) => {
+            if (e.target.id === 'cardModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

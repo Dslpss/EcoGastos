@@ -13,6 +13,7 @@ import { Header } from '../components/Header';
 import { FinancialHealthCard } from '../components/FinancialHealthCard';
 import { WarningCard } from '../components/WarningCard';
 import { useAppConfig } from '../context/AppConfigContext';
+import { FeatureCardsSlider } from '../components/FeatureCardsSlider';
 
 const { width } = Dimensions.get('window');
 
@@ -111,6 +112,9 @@ export const DashboardScreen = () => {
           subtitle="Bem-vindo de volta" 
           showProfile 
         />
+
+        {/* Feature Cards Slider */}
+        <FeatureCardsSlider />
 
         {/* Warning Card */}
         {showWarning && warningMessage && (

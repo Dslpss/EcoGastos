@@ -36,11 +36,15 @@ app.use('/api/', limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/config', require('./routes/config'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api', require('./routes/featureCards'));
 
 // Root route
 app.get('/', (req, res) => {
