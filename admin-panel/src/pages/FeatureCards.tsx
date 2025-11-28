@@ -20,7 +20,7 @@ interface FeatureCard {
   };
 }
 
-const API_URL = 'https://ecogastos-production.up.railway.app';
+const API_URL = 'https://ecogastos-production.up.railway.app/api';
 
 const ICON_OPTIONS = [
   { value: 'star-outline', label: '⭐ Star' },
