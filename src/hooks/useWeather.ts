@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface WeatherData {
   temperature: number;
@@ -20,10 +21,46 @@ export const useWeather = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userCity, setUserCity] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    getWeather();
+    loadSavedCity();
   }, []);
+
+  useEffect(() => {
+    if (userCity !== undefined) {
+      getWeather();
+    }
+  }, [userCity]);
+
+  const loadSavedCity = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('@eco_gastos_user_city');
+      // If saved is null, it means use current location (default behavior)
+      // We set userCity to undefined or empty string to trigger initial fetch?
+      // Actually, let's treat 'null' as "not loaded yet" or "use GPS"
+      // If we want to be explicit:
+      setUserCity(saved); // saved can be null (GPS) or string (Manual)
+    } catch (e) {
+      console.error('Failed to load city', e);
+      setUserCity(null);
+    }
+  };
+
+  const updateCity = async (city: string | null) => {
+    try {
+      if (city) {
+        await AsyncStorage.setItem('@eco_gastos_user_city', city);
+      } else {
+        await AsyncStorage.removeItem('@eco_gastos_user_city');
+      }
+      setUserCity(city);
+      setLoading(true);
+      // Effect will trigger getWeather
+    } catch (e) {
+      console.error('Failed to save city', e);
+    }
+  };
 
   const getWeather = async () => {
     try {
@@ -48,28 +85,47 @@ export const useWeather = () => {
         return;
       }
 
-      // Get current location with fallback
-      console.log('📡 Getting location...');
-      let location = await Location.getLastKnownPositionAsync();
+      let latitude, longitude;
 
-      if (!location) {
-        console.log('⚠️ No last known location, requesting current position...');
-        location = await Promise.race([
-          Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Location timeout')), 15000)
-          )
-        ]) as any;
+      if (userCity) {
+        console.log(`🔍 Searching for city: ${userCity}`);
+        // Geocode the manually entered city
+        const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(userCity)}&count=1&language=pt&format=json`;
+        const geoResponse = await fetch(geocodeUrl);
+        const geoData = await geoResponse.json();
+
+        if (geoData.results && geoData.results.length > 0) {
+          latitude = geoData.results[0].latitude;
+          longitude = geoData.results[0].longitude;
+          console.log(`✅ Found coordinates for ${userCity}: ${latitude}, ${longitude}`);
+        } else {
+          throw new Error('Cidade não encontrada');
+        }
+      } else {
+        // Get current location with fallback
+        console.log('📡 Getting location...');
+        let location = await Location.getLastKnownPositionAsync();
+
+        if (!location) {
+          console.log('⚠️ No last known location, requesting current position...');
+          location = await Promise.race([
+            Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Location timeout')), 15000)
+            )
+          ]) as any;
+        }
+
+        if (!location) {
+          throw new Error('Could not get location');
+        }
+
+        console.log('✅ Location:', location.coords);
+        latitude = location.coords.latitude;
+        longitude = location.coords.longitude;
       }
-
-      if (!location) {
-        throw new Error('Could not get location');
-      }
-
-      console.log('✅ Location:', location.coords);
-      const { latitude, longitude } = location.coords;
 
       // Fetch weather data from Open-Meteo (free, no API key needed!)
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`;
@@ -160,5 +216,5 @@ export const useWeather = () => {
     return 'Clima variável';
   };
 
-  return { weather, loading, error };
+  return { weather, loading, error, userCity: userCity || null, updateCity };
 };

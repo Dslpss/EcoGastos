@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface CurrencyData {
   bid: string;
@@ -11,7 +12,8 @@ let currencyCache: {
   timestamp: number;
 } | null = null;
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+const CACHE_KEY = '@eco_gastos_currency_cache';
 
 export const useCurrency = () => {
   const [currency, setCurrency] = useState<CurrencyData | null>(null);
@@ -23,11 +25,25 @@ export const useCurrency = () => {
 
   const getCurrency = async () => {
     try {
+      // Check memory cache first
       if (currencyCache && Date.now() - currencyCache.timestamp < CACHE_DURATION) {
-        console.log('📦 Using cached currency data');
+        console.log('📦 Using memory cached currency data');
         setCurrency(currencyCache.data);
         setLoading(false);
         return;
+      }
+
+      // Check persistent storage
+      const storedCache = await AsyncStorage.getItem(CACHE_KEY);
+      if (storedCache) {
+        const parsedCache = JSON.parse(storedCache);
+        if (Date.now() - parsedCache.timestamp < CACHE_DURATION) {
+          console.log('💾 Using stored currency data');
+          setCurrency(parsedCache.data);
+          currencyCache = parsedCache; // Update memory cache
+          setLoading(false);
+          return;
+        }
       }
 
       console.log('💲 Fetching currency...');
@@ -74,6 +90,9 @@ export const useCurrency = () => {
           data: newData,
           timestamp: Date.now(),
         };
+
+        // Save to storage
+        await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(currencyCache));
       } else {
         throw new Error('All currency APIs failed');
       }

@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWeather } from '../hooks/useWeather';
 import { useCurrency } from '../hooks/useCurrency';
+import { CitySelectionModal } from './CitySelectionModal';
 
 interface HeaderProps {
   title: string;
@@ -17,9 +18,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, rightAction, showWeather = true }) => {
   const { theme, isValuesVisible, toggleValuesVisibility } = useFinance();
-  const { weather, loading } = useWeather();
+  const { weather, loading, userCity, updateCity } = useWeather();
   const { currency } = useCurrency();
   const navigation = useNavigation<any>();
+  const [isCityModalVisible, setIsCityModalVisible] = React.useState(false);
 
   return (
     <View style={styles.container}>
@@ -80,7 +82,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
       {showWeather && (weather || currency) && (
         <View style={styles.widgetsContainer}>
           {weather && (
-            <View style={[styles.widget, { backgroundColor: theme.card }]}>
+            <TouchableOpacity 
+              style={[styles.widget, { backgroundColor: theme.card }]}
+              onPress={() => setIsCityModalVisible(true)}
+              activeOpacity={0.7}
+            >
               <Text style={styles.widgetIcon}>{weather.icon}</Text>
               <View>
                 <Text style={[styles.widgetValue, { color: theme.text }]}>
@@ -90,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
                   {weather.city.split(',')[0]}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
 
           {weather && currency && <View style={{ width: 12 }} />}
@@ -114,6 +120,13 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
       {showWeather && loading && !weather && (
         <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: 10, alignSelf: 'flex-start' }} />
       )}
+
+      <CitySelectionModal 
+        visible={isCityModalVisible} 
+        onClose={() => setIsCityModalVisible(false)} 
+        onSelectCity={updateCity}
+        currentCity={userCity}
+      />
     </View>
   );
 };
