@@ -6,7 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWeather } from '../hooks/useWeather';
 import { useCurrency } from '../hooks/useCurrency';
-import { CitySelectionModal } from './CitySelectionModal';
+import { WeatherDetailModal } from './WeatherDetailModal';
+
 
 interface HeaderProps {
   title: string;
@@ -121,11 +122,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
         <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: 10, alignSelf: 'flex-start' }} />
       )}
 
-      <CitySelectionModal 
+      <WeatherDetailModal 
         visible={isCityModalVisible} 
         onClose={() => setIsCityModalVisible(false)} 
-        onSelectCity={updateCity}
         currentCity={userCity}
+        onUpdateCity={updateCity}
       />
     </View>
   );

@@ -138,27 +138,34 @@ export const useWeather = () => {
       if (response.ok && data.current_weather) {
         let cityName = 'Sua localização';
 
-        try {
-          // Get city name from reverse geocoding
-          const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
-          const geocodeResponse = await fetch(geocodeUrl, {
-            headers: {
-              'User-Agent': 'EcoGastosApp/1.0', // Required by Nominatim
-            },
-          });
-          
-          if (geocodeResponse.ok) {
-            const geocodeData = await geocodeResponse.json();
-            cityName = geocodeData.address?.city || 
-                      geocodeData.address?.town || 
-                      geocodeData.address?.village || 
-                      geocodeData.address?.municipality ||
-                      geocodeData.address?.state || 
-                      'Sua localização';
+        // Only do reverse geocoding if user didn't manually specify a city
+        if (userCity) {
+          // Use the manually entered city name
+          cityName = userCity;
+          console.log(`✅ Using manual city name: ${cityName}`);
+        } else {
+          // Get city name from reverse geocoding for GPS location
+          try {
+            const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
+            const geocodeResponse = await fetch(geocodeUrl, {
+              headers: {
+                'User-Agent': 'EcoGastosApp/1.0', // Required by Nominatim
+              },
+            });
+            
+            if (geocodeResponse.ok) {
+              const geocodeData = await geocodeResponse.json();
+              cityName = geocodeData.address?.city || 
+                        geocodeData.address?.town || 
+                        geocodeData.address?.village || 
+                        geocodeData.address?.municipality ||
+                        geocodeData.address?.state || 
+                        'Sua localização';
+            }
+          } catch (geoError) {
+            console.log('⚠️ Geocoding error:', geoError);
+            // Continue with default city name if geocoding fails
           }
-        } catch (geoError) {
-          console.log('⚠️ Geocoding error:', geoError);
-          // Continue with default city name if geocoding fails
         }
 
         const newWeather = {
