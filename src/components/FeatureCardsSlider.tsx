@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -14,6 +14,9 @@ export const FeatureCardsSlider: React.FC = () => {
   const { theme } = useFinance();
   const { cards, loading, refresh } = useFeatureCards();
   const navigation = useNavigation<any>();
+  const [selectedCard, setSelectedCard] = React.useState<any>(null);
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const hasShownModal = React.useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -21,14 +24,27 @@ export const FeatureCardsSlider: React.FC = () => {
     }, [])
   );
 
+  // Auto-open modal logic
+  React.useEffect(() => {
+    if (!loading && cards.length > 0 && !hasShownModal.current) {
+      const modalCards = cards.filter(card => card.action.type === 'modal');
+      if (modalCards.length > 0) {
+        // Open the first modal card found
+        setSelectedCard(modalCards[0]);
+        setModalVisible(true);
+        hasShownModal.current = true;
+      }
+    }
+  }, [cards, loading]);
+
   const handleCardPress = (card: any) => {
     switch (card.action.type) {
       case 'navigate':
         navigation.navigate(card.action.target, card.action.params || {});
         break;
       case 'modal':
-        // Handle modal opening
-        console.log('Open modal:', card.action.target);
+        setSelectedCard(card);
+        setModalVisible(true);
         break;
       case 'external':
         // Handle external link
@@ -70,10 +86,10 @@ export const FeatureCardsSlider: React.FC = () => {
               </View>
               
               <View style={styles.content}>
-                <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
+                <Text style={[styles.title, { color: card.textColor || theme.text }]} numberOfLines={2}>
                   {card.title}
                 </Text>
-                <Text style={[styles.description, { color: theme.textLight }]} numberOfLines={2}>
+                <Text style={[styles.description, { color: card.textColor ? card.textColor + 'CC' : theme.textLight }]} numberOfLines={4}>
                   {card.description}
                 </Text>
               </View>
@@ -99,6 +115,48 @@ export const FeatureCardsSlider: React.FC = () => {
             />
           ))}
         </View>
+      )}
+
+      {/* Details Modal */}
+      {selectedCard && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color={theme.textLight} />
+              </TouchableOpacity>
+
+              <View style={[styles.modalIconContainer, { backgroundColor: selectedCard.backgroundColor }]}>
+                <Ionicons name={selectedCard.icon} size={48} color={selectedCard.color} />
+              </View>
+
+              <Text style={[styles.modalTitle, { color: selectedCard.textColor || theme.text }]}>
+                {selectedCard.title}
+              </Text>
+
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <Text style={[styles.modalDescription, { color: selectedCard.textColor ? selectedCard.textColor + 'CC' : theme.textLight }]}>
+                  {selectedCard.description}
+                </Text>
+              </ScrollView>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: selectedCard.color }]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Entendi</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );
@@ -170,5 +228,67 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '90%',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+    maxHeight: '80%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 1,
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalScroll: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  modalDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  modalButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

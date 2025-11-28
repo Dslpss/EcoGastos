@@ -9,6 +9,7 @@ interface FeatureCard {
   icon: string;
   color: string;
   backgroundColor: string;
+  textColor?: string;
   enabled: boolean;
   order: number;
   action: {

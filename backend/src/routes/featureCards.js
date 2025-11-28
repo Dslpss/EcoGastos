@@ -35,7 +35,7 @@ router.get('/admin/feature-cards', auth, async (req, res) => {
 // Create new feature card
 router.post('/admin/feature-cards', auth, async (req, res) => {
   try {
-    const { title, description, icon, color, backgroundColor, enabled, order, action } = req.body;
+    const { title, description, icon, color, backgroundColor, textColor, enabled, order, action } = req.body;
 
     // Validation
     if (!title || !description || !action || !action.target) {
@@ -48,6 +48,7 @@ router.post('/admin/feature-cards', auth, async (req, res) => {
       icon: icon || 'star-outline',
       color: color || '#6366F1',
       backgroundColor: backgroundColor || '#EEF2FF',
+      textColor: textColor || '#1F2937',
       enabled: enabled !== undefined ? enabled : true,
       order: order || 0,
       action: {

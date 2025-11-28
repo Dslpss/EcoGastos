@@ -26,6 +26,11 @@ const featureCardSchema = new mongoose.Schema({
     required: true,
     default: '#EEF2FF',
   },
+  textColor: {
+    type: String,
+    required: true,
+    default: '#1F2937',
+  },
   enabled: {
     type: Boolean,
     default: true,

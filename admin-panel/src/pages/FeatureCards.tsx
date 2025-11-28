@@ -10,6 +10,7 @@ interface FeatureCard {
   icon: string;
   color: string;
   backgroundColor: string;
+  textColor?: string;
   enabled: boolean;
   order: number;
   action: {
@@ -48,6 +49,7 @@ export const FeatureCards = () => {
     icon: 'star-outline',
     color: '#6366F1',
     backgroundColor: '#EEF2FF',
+    textColor: '#1F2937',
     enabled: true,
     order: 0,
     actionType: 'navigate' as 'navigate' | 'modal' | 'external',
@@ -88,6 +90,7 @@ export const FeatureCards = () => {
       icon: formData.icon,
       color: formData.color,
       backgroundColor: formData.backgroundColor,
+      textColor: formData.textColor,
       enabled: formData.enabled,
       order: formData.order,
       action: {
@@ -132,6 +135,7 @@ export const FeatureCards = () => {
       icon: card.icon,
       color: card.color,
       backgroundColor: card.backgroundColor,
+      textColor: card.textColor || '#1F2937',
       enabled: card.enabled,
       order: card.order,
       actionType: card.action.type,
@@ -189,6 +193,7 @@ export const FeatureCards = () => {
       icon: 'star-outline',
       color: '#6366F1',
       backgroundColor: '#EEF2FF',
+      textColor: '#1F2937',
       enabled: true,
       order: 0,
       actionType: 'navigate',
@@ -277,8 +282,8 @@ export const FeatureCards = () => {
                       {ICON_OPTIONS.find(i => i.value === card.icon)?.label.split(' ')[0] || '⭐'}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">{card.title}</h3>
-                      <p className="text-sm text-gray-500">{card.description}</p>
+                      <h3 className="text-lg font-semibold" style={{ color: card.textColor || '#1F2937' }}>{card.title}</h3>
+                      <p className="text-sm" style={{ color: card.textColor ? `${card.textColor}CC` : '#6B7280' }}>{card.description}</p>
                       <div className="mt-2 flex items-center space-x-4 text-xs text-gray-400">
                         <span>Ordem: {card.order}</span>
                         <span>•</span>
@@ -376,7 +381,7 @@ export const FeatureCards = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Cor Principal</label>
                   <input
@@ -393,6 +398,16 @@ export const FeatureCards = () => {
                     type="color"
                     value={formData.backgroundColor}
                     onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+                    className="w-full h-12 border border-gray-300 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cor do Texto</label>
+                  <input
+                    type="color"
+                    value={formData.textColor}
+                    onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
                     className="w-full h-12 border border-gray-300 rounded-lg cursor-pointer"
                   />
                 </div>
