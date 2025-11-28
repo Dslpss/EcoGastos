@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
               onPress={() => setIsCityModalVisible(true)}
               activeOpacity={0.7}
             >
-              <Text style={styles.widgetIcon}>{weather.icon}</Text>
+              <Ionicons name={weather.icon} size={24} color={theme.primary} style={{ marginRight: 8 }} />
               <View>
                 <Text style={[styles.widgetValue, { color: theme.text }]}>
                   {weather.temperature}°C
@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, showProfile, ri
 
           {currency && (
             <View style={[styles.widget, { backgroundColor: theme.card }]}>
-              <Text style={styles.widgetIcon}>💵</Text>
+              <Ionicons name="cash-outline" size={24} color={theme.success} style={{ marginRight: 8 }} />
               <View>
                 <Text style={[styles.widgetValue, { color: theme.text }]}>
                   R$ {currency.bid}

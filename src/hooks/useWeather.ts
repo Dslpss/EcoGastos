@@ -6,7 +6,7 @@ interface WeatherData {
   temperature: number;
   city: string;
   condition: string;
-  icon: string;
+  icon: any; // Ionicons name
 }
 
 // Global cache to persist data between navigations
@@ -191,15 +191,15 @@ export const useWeather = () => {
   };
 
   const getWeatherIconFromCode = (code: number): string => {
-    if (code === 0) return '☀️'; // Clear sky
-    if (code <= 3) return '⛅'; // Partly cloudy
-    if (code <= 48) return '🌫️'; // Fog
-    if (code <= 67) return '🌧️'; // Rain
-    if (code <= 77) return '🌨️'; // Snow
-    if (code <= 82) return '🌦️'; // Rain showers
-    if (code <= 86) return '🌨️'; // Snow showers
-    if (code <= 99) return '⛈️'; // Thunderstorm
-    return '🌤️'; // Default
+    if (code === 0) return 'sunny'; // Clear sky
+    if (code <= 3) return 'partly-sunny'; // Partly cloudy
+    if (code <= 48) return 'cloud'; // Fog
+    if (code <= 67) return 'rainy'; // Rain
+    if (code <= 77) return 'snow'; // Snow
+    if (code <= 82) return 'rainy'; // Rain showers
+    if (code <= 86) return 'snow'; // Snow showers
+    if (code <= 99) return 'thunderstorm'; // Thunderstorm
+    return 'partly-sunny'; // Default
   };
 
   const getWeatherCondition = (code: number): string => {
