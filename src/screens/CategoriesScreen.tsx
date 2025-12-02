@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
 
 import { Category } from '../types';
+import { AVAILABLE_EMOJIS } from '../constants';
 
 export const CategoriesScreen = () => {
   const { categories, theme } = useFinance();
@@ -31,7 +32,11 @@ export const CategoriesScreen = () => {
       activeOpacity={0.7}
     >
       <View style={[styles.colorContainer, { backgroundColor: item.color + '20' }]}>
-        <Ionicons name={(item.icon || 'pricetag') as any} size={32} color={item.color} />
+        {AVAILABLE_EMOJIS.includes(item.icon || '') ? (
+          <Text style={{ fontSize: 32 }}>{item.icon}</Text>
+        ) : (
+          <Ionicons name={(item.icon || 'pricetag') as any} size={32} color={item.color} />
+        )}
       </View>
       <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{item.name}</Text>
       {item.isCustom && (

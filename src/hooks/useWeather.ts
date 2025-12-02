@@ -76,18 +76,8 @@ export const useWeather = () => {
 
       console.log('🌤️ Starting weather fetch...');
       
-      // Request location permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      console.log('📍 Permission status:', status);
-      
-      if (status !== 'granted') {
-        console.log('❌ Permission denied');
-        setError('Permission denied');
-        setLoading(false);
-        return;
-      }
-
       let latitude, longitude;
+      let usingDefaultLocation = false;
 
       if (userCity) {
         console.log(`🔍 Searching for city: ${userCity}`);
@@ -104,29 +94,47 @@ export const useWeather = () => {
           throw new Error('Cidade não encontrada');
         }
       } else {
-        // Get current location with fallback
-        console.log('📡 Getting location...');
-        let location = await Location.getLastKnownPositionAsync();
+        // Try to get current location
+        console.log('📡 Requesting location permission...');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('📍 Permission status:', status);
+        
+        if (status === 'granted') {
+          console.log('📡 Getting location...');
+          let location = await Location.getLastKnownPositionAsync();
 
-        if (!location) {
-          console.log('⚠️ No last known location, requesting current position...');
-          location = await Promise.race([
-            Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            }),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Location timeout')), 15000)
-            )
-          ]) as any;
+          if (!location) {
+            console.log('⚠️ No last known location, requesting current position...');
+            try {
+              location = await Promise.race([
+                Location.getCurrentPositionAsync({
+                  accuracy: Location.Accuracy.Balanced,
+                }),
+                new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Location timeout')), 15000)
+                )
+              ]) as any;
+            } catch (e) {
+              console.log('⚠️ Failed to get current position, using fallback');
+            }
+          }
+
+          if (location) {
+            console.log('✅ Location:', location.coords);
+            latitude = location.coords.latitude;
+            longitude = location.coords.longitude;
+          }
+        } else {
+          console.log('❌ Permission denied - Using fallback');
         }
 
-        if (!location) {
-          throw new Error('Could not get location');
+        // Fallback if permission denied OR location fetch failed
+        if (!latitude || !longitude) {
+          console.log('⚠️ Using default location (São Paulo)');
+          latitude = -23.5505;
+          longitude = -46.6333;
+          usingDefaultLocation = true;
         }
-
-        console.log('✅ Location:', location.coords);
-        latitude = location.coords.latitude;
-        longitude = location.coords.longitude;
       }
 
       // Fetch weather data from Open-Meteo (free, no API key needed!)
@@ -140,11 +148,10 @@ export const useWeather = () => {
       if (response.ok && data.current) {
         let cityName = 'Sua localização';
 
-        // Only do reverse geocoding if user didn't manually specify a city
         if (userCity) {
-          // Use the manually entered city name
           cityName = userCity;
-          console.log(`✅ Using manual city name: ${cityName}`);
+        } else if (usingDefaultLocation) {
+          cityName = 'São Paulo (Padrão)';
         } else {
           // Get city name from reverse geocoding for GPS location
           try {
@@ -166,7 +173,6 @@ export const useWeather = () => {
             }
           } catch (geoError) {
             console.log('⚠️ Geocoding error:', geoError);
-            // Continue with default city name if geocoding fails
           }
         }
 

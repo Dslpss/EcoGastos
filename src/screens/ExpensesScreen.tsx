@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SectionList, TouchableOpacity, Alert, Animated 
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
+import { AVAILABLE_EMOJIS } from '../constants';
 import { AddExpenseModal } from '../components/AddExpenseModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
@@ -77,7 +78,11 @@ export const ExpensesScreen = () => {
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <View style={styles.cardContent}>
           <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '15' }]}>
-            <Ionicons name={category?.icon as any || 'pricetag'} size={20} color={category?.color || theme.gray} />
+            {AVAILABLE_EMOJIS.includes(category?.icon || '') ? (
+              <Text style={{ fontSize: 20 }}>{category?.icon}</Text>
+            ) : (
+              <Ionicons name={category?.icon as any || 'pricetag'} size={20} color={category?.color || theme.gray} />
+            )}
           </View>
           
           <View style={styles.infoContainer}>

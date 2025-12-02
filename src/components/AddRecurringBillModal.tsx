@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFinance } from '../context/FinanceContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AVAILABLE_EMOJIS } from '../constants';
 
 import { RecurringBill } from '../types';
 
@@ -174,11 +175,15 @@ export const AddRecurringBillModal: React.FC<Props> = ({ visible, onClose, billT
                       styles.categoryIcon, 
                       { backgroundColor: categoryId === cat.id ? 'rgba(255,255,255,0.2)' : cat.color + '20' }
                     ]}>
-                      <Ionicons 
-                        name={cat.icon as any || 'pricetag'} 
-                        size={16} 
-                        color={categoryId === cat.id ? '#FFF' : cat.color} 
-                      />
+                      {AVAILABLE_EMOJIS.includes(cat.icon || '') ? (
+                        <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
+                      ) : (
+                        <Ionicons 
+                          name={cat.icon as any || 'pricetag'} 
+                          size={16} 
+                          color={categoryId === cat.id ? '#FFF' : cat.color} 
+                        />
+                      )}
                     </View>
                     <Text style={[
                       styles.categoryText,

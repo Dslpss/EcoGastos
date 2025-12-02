@@ -68,57 +68,66 @@ export const WeatherDetailModal: React.FC<WeatherDetailModalProps> = ({
         }
       } else {
         // Use current GPS location
+        console.log('📡 Requesting location permission...');
         const { status } = await Location.requestForegroundPermissionsAsync();
         
-        if (status !== 'granted') {
-          console.log('❌ Permission denied');
-          setLoading(false);
-          return;
-        }
+        let location = null;
 
-        // Get current location
-        let location = await Location.getLastKnownPositionAsync();
+        if (status === 'granted') {
+          // Get current location
+          location = await Location.getLastKnownPositionAsync();
 
-        if (!location) {
-          location = await Promise.race([
-            Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            }),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Location timeout')), 15000)
-            )
-          ]) as any;
-        }
-
-        if (!location) {
-          throw new Error('Não foi possível obter localização');
-        }
-
-        latitude = location.coords.latitude;
-        longitude = location.coords.longitude;
-
-        // Get city name from reverse geocoding
-        try {
-          const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
-          const geocodeResponse = await fetch(geocodeUrl, {
-            headers: {
-              'User-Agent': 'EcoGastosApp/1.0',
-            },
-          });
-          
-          if (geocodeResponse.ok) {
-            const geocodeData = await geocodeResponse.json();
-            const detectedCity = geocodeData.address?.city || 
-                      geocodeData.address?.town || 
-                      geocodeData.address?.village || 
-                      geocodeData.address?.municipality ||
-                      geocodeData.address?.state || 
-                      'Sua localização';
-            setCityName(detectedCity);
+          if (!location) {
+            try {
+              location = await Promise.race([
+                Location.getCurrentPositionAsync({
+                  accuracy: Location.Accuracy.Balanced,
+                }),
+                new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Location timeout')), 15000)
+                )
+              ]) as any;
+            } catch (e) {
+              console.log('⚠️ Failed to get current position');
+            }
           }
-        } catch (geoError) {
-          console.log('⚠️ Geocoding error:', geoError);
-          setCityName('Sua localização');
+        } else {
+          console.log('❌ Permission denied - Using fallback');
+        }
+
+        if (location) {
+          latitude = location.coords.latitude;
+          longitude = location.coords.longitude;
+
+          // Get city name from reverse geocoding
+          try {
+            const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
+            const geocodeResponse = await fetch(geocodeUrl, {
+              headers: {
+                'User-Agent': 'EcoGastosApp/1.0',
+              },
+            });
+            
+            if (geocodeResponse.ok) {
+              const geocodeData = await geocodeResponse.json();
+              const detectedCity = geocodeData.address?.city || 
+                        geocodeData.address?.town || 
+                        geocodeData.address?.village || 
+                        geocodeData.address?.municipality ||
+                        geocodeData.address?.state || 
+                        'Sua localização';
+              setCityName(detectedCity);
+            }
+          } catch (geoError) {
+            console.log('⚠️ Geocoding error:', geoError);
+            setCityName('Sua localização');
+          }
+        } else {
+          // Fallback to São Paulo if permission denied or location failed
+          console.log('⚠️ Using default location (São Paulo)');
+          latitude = -23.5505;
+          longitude = -46.6333;
+          setCityName('São Paulo (Padrão)');
         }
       }
 

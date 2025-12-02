@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
+import { AVAILABLE_EMOJIS } from '../constants';
 import { AddRecurringBillModal } from '../components/AddRecurringBillModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
@@ -78,7 +79,11 @@ export const RecurringBillsScreen = () => {
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <View style={styles.cardContent}>
           <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '20' }]}>
-            <Ionicons name="calendar" size={24} color={category?.color || theme.gray} />
+            {AVAILABLE_EMOJIS.includes(category?.icon || '') ? (
+              <Text style={{ fontSize: 24 }}>{category?.icon}</Text>
+            ) : (
+              <Ionicons name={category?.icon as any || 'calendar'} size={24} color={category?.color || theme.gray} />
+            )}
           </View>
 
           <View style={styles.infoContainer}>

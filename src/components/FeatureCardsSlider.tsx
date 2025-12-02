@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useFinance } from '../context/FinanceContext';
 import { useFeatureCards } from '../hooks/useFeatureCards';
+import { AVAILABLE_EMOJIS } from '../constants';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.85;
@@ -82,7 +83,11 @@ export const FeatureCardsSlider: React.FC = () => {
               style={styles.card}
             >
               <View style={[styles.iconContainer, { backgroundColor: card.color + '20' }]}>
-                <Ionicons name={card.icon as any} size={32} color={card.color} />
+                {AVAILABLE_EMOJIS.includes(card.icon || '') ? (
+                  <Text style={{ fontSize: 32 }}>{card.icon}</Text>
+                ) : (
+                  <Ionicons name={card.icon as any} size={32} color={card.color} />
+                )}
               </View>
               
               <View style={styles.content}>
@@ -135,7 +140,11 @@ export const FeatureCardsSlider: React.FC = () => {
               </TouchableOpacity>
 
               <View style={[styles.modalIconContainer, { backgroundColor: selectedCard.backgroundColor }]}>
-                <Ionicons name={selectedCard.icon} size={48} color={selectedCard.color} />
+                {AVAILABLE_EMOJIS.includes(selectedCard.icon || '') ? (
+                  <Text style={{ fontSize: 48 }}>{selectedCard.icon}</Text>
+                ) : (
+                  <Ionicons name={selectedCard.icon} size={48} color={selectedCard.color} />
+                )}
               </View>
 
               <Text style={[styles.modalTitle, { color: selectedCard.textColor || theme.text }]}>

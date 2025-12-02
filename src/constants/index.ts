@@ -39,3 +39,21 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: '5', name: 'Educação', color: '#9C27B0', icon: 'school', isCustom: false },
   { id: '6', name: 'Outros', color: '#9E9E9E', icon: 'ellipsis-horizontal', isCustom: false },
 ];
+
+export const AVAILABLE_COLORS = [
+  '#FF5252', '#4A90E2', '#50E3C2', '#FFC107', '#9C27B0', '#9E9E9E',
+  '#E91E63', '#673AB7', '#3F51B5', '#009688', '#FF5722', '#795548'
+];
+
+export const AVAILABLE_ICONS = [
+  'fast-food', 'car', 'medkit', 'game-controller', 'school', 'ellipsis-horizontal',
+  'home', 'cart', 'airplane', 'build', 'shirt', 'gift', 'fitness', 'paw', 'cafe', 'beer',
+  'card', 'business', 'flash', 'bulb', 'tv', 'play-circle', 'wallet', 'logo-netflix'
+];
+
+export const AVAILABLE_EMOJIS = [
+  '💳', '🏦', '💡', '⚡', '📺', '🎬', '💰', '🍔', '🚗', '🏠', 
+  '✈️', '🎮', '🏥', '👕', '🎁', '💪', '🐾', '☕', '🍺', '📱'
+];
+
+export const ALL_ICONS = [...AVAILABLE_ICONS, ...AVAILABLE_EMOJIS];

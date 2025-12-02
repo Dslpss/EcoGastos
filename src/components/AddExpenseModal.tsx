@@ -6,6 +6,7 @@ import { Expense } from '../types';
 import { formatDate } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AVAILABLE_EMOJIS } from '../constants';
 
 interface Props {
   visible: boolean;
@@ -169,11 +170,15 @@ export const AddExpenseModal: React.FC<Props> = ({ visible, onClose, expenseToEd
                       styles.categoryIcon, 
                       { backgroundColor: categoryId === cat.id ? 'rgba(255,255,255,0.2)' : cat.color + '20' }
                     ]}>
-                      <Ionicons 
-                        name={cat.icon as any || 'pricetag'} 
-                        size={16} 
-                        color={categoryId === cat.id ? '#FFF' : cat.color} 
-                      />
+                      {AVAILABLE_EMOJIS.includes(cat.icon || '') ? (
+                        <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
+                      ) : (
+                        <Ionicons 
+                          name={cat.icon as any || 'pricetag'} 
+                          size={16} 
+                          color={categoryId === cat.id ? '#FFF' : cat.color} 
+                        />
+                      )}
                     </View>
                     <Text style={[
                       styles.categoryText,

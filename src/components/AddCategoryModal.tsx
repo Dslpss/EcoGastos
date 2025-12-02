@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Category } from '../types';
+import { AVAILABLE_COLORS, AVAILABLE_ICONS, AVAILABLE_EMOJIS, ALL_ICONS } from '../constants';
 
 interface Props {
   visible: boolean;
@@ -12,21 +13,18 @@ interface Props {
   categoryToEdit?: Category;
 }
 
-const AVAILABLE_COLORS = [
-  '#FF5252', '#4A90E2', '#50E3C2', '#FFC107', '#9C27B0', '#9E9E9E',
-  '#E91E63', '#673AB7', '#3F51B5', '#009688', '#FF5722', '#795548'
-];
 
-const AVAILABLE_ICONS = [
-  'fast-food', 'car', 'medkit', 'game-controller', 'school', 'ellipsis-horizontal',
-  'home', 'cart', 'airplane', 'build', 'shirt', 'gift', 'fitness', 'paw', 'cafe', 'beer'
-];
 
 export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryToEdit }) => {
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
-  const [selectedIcon, setSelectedIcon] = useState(AVAILABLE_ICONS[0]);
+  const [selectedIcon, setSelectedIcon] = useState(ALL_ICONS[0]);
   const { addCategory, updateCategory, deleteCategory, theme } = useFinance();
+
+  // Helper function to check if icon is an emoji
+  const isEmoji = (icon: string) => {
+    return AVAILABLE_EMOJIS.includes(icon);
+  };
 
   // Reset or fill form when modal opens
   React.useEffect(() => {
@@ -38,7 +36,7 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryTo
       } else {
         setName('');
         setSelectedColor(AVAILABLE_COLORS[0]);
-        setSelectedIcon(AVAILABLE_ICONS[0]);
+        setSelectedIcon(ALL_ICONS[0]);
       }
     }
   }, [visible, categoryToEdit]);
@@ -151,7 +149,7 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryTo
               {/* Icons */}
               <Text style={[styles.sectionLabel, { color: theme.textLight }]}>Ícone</Text>
               <View style={styles.iconsGrid}>
-                {AVAILABLE_ICONS.map(icon => (
+                {ALL_ICONS.map(icon => (
                   <TouchableOpacity
                     key={icon}
                     style={[
@@ -163,11 +161,15 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryTo
                     onPress={() => setSelectedIcon(icon)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons 
-                      name={icon as any} 
-                      size={24} 
-                      color={selectedIcon === icon ? selectedColor : theme.textLight} 
-                    />
+                    {isEmoji(icon) ? (
+                      <Text style={styles.emojiIcon}>{icon}</Text>
+                    ) : (
+                      <Ionicons 
+                        name={icon as any} 
+                        size={24} 
+                        color={selectedIcon === icon ? selectedColor : theme.textLight} 
+                      />
+                    )}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -314,6 +316,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emojiIcon: {
+    fontSize: 28,
   },
   saveButtonContainer: {
     borderRadius: 20,

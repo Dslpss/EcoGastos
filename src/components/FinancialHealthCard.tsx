@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { getFinancialHealth } from '../utils/financialInsights';
+import { AVAILABLE_EMOJIS } from '../constants';
 
 interface Props {
   income: number;
@@ -20,7 +21,11 @@ export const FinancialHealthCard: React.FC<Props> = ({ income, expenses, savings
   return (
     <View style={[styles.container, { backgroundColor: theme.card }]}>
       <View style={[styles.iconContainer, { backgroundColor: health.color + '20' }]}>
-        <Ionicons name={health.icon as any} size={24} color={health.color} />
+        {AVAILABLE_EMOJIS.includes(health.icon || '') ? (
+          <Text style={{ fontSize: 24 }}>{health.icon}</Text>
+        ) : (
+          <Ionicons name={health.icon as any} size={24} color={health.color} />
+        )}
       </View>
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.text }]}>Análise Financeira</Text>

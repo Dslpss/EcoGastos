@@ -42,7 +42,7 @@ interface FinanceContextData {
 const FinanceContext = createContext<FinanceContextData>({} as FinanceContextData);
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, currentUser, isLoading: isAuthLoading } = useAuth();
   const [balance, setBalance] = useState(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
@@ -59,6 +59,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Load data when authenticated
   useEffect(() => {
+    if (isAuthLoading) return;
+
     if (isAuthenticated) {
       loadData();
     } else {
@@ -70,7 +72,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setRecurringBills([]);
       setIsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isAuthLoading]);
 
   // Update user profile when currentUser changes
   useEffect(() => {
