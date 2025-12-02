@@ -42,6 +42,7 @@ const AuthWrapper = () => {
   const [isChecking, setIsChecking] = useState(true);
 
   const appState = React.useRef(AppState.currentState);
+  const isAuthenticating = React.useRef(false);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -70,6 +71,7 @@ const AuthWrapper = () => {
 
   const checkAuth = async () => {
     if (isLoading) return;
+    if (isAuthenticating.current) return;
 
     if (!settings.biometricsEnabled) {
       setIsAuthenticated(true);
@@ -78,6 +80,12 @@ const AuthWrapper = () => {
     }
 
     try {
+      isAuthenticating.current = true;
+      setIsChecking(true);
+
+      // Small delay to ensure Activity is fully resumed/ready on Android
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Autenticação EcoGastos',
         fallbackLabel: 'Usar Senha',
@@ -92,6 +100,7 @@ const AuthWrapper = () => {
       console.error(e);
     } finally {
       setIsChecking(false);
+      isAuthenticating.current = false;
     }
   };
 
