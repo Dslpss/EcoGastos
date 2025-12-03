@@ -14,11 +14,12 @@ import { FinancialHealthCard } from '../components/FinancialHealthCard';
 import { WarningCard } from '../components/WarningCard';
 import { useAppConfig } from '../context/AppConfigContext';
 import { FeatureCardsSlider } from '../components/FeatureCardsSlider';
+import { MonthSelector } from '../components/MonthSelector';
 
 const { width } = Dimensions.get('window');
 
 export const DashboardScreen = () => {
-  const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible, userProfile, deleteIncome } = useFinance();
+  const { balance, expenses, incomes, categories, recurringBills, theme, isValuesVisible, userProfile, deleteIncome, selectedDate } = useFinance();
   const { showWarning, warningMessage } = useAppConfig();
   const [isIncomeModalVisible, setIsIncomeModalVisible] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
@@ -39,23 +40,23 @@ export const DashboardScreen = () => {
     );
   };
 
-  const totalExpenses = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  const monthlyExpenses = useMemo(() => {
+    const currentMonth = selectedDate.getMonth();
+    const currentYear = selectedDate.getFullYear();
 
-    return expenses
-      .filter(e => {
-        const date = new Date(e.date);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-      })
-      .reduce((acc, curr) => acc + curr.amount, 0);
-  }, [expenses]);
+    return expenses.filter(e => {
+      const date = new Date(e.date);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+  }, [expenses, selectedDate]);
+
+  const totalExpenses = useMemo(() => {
+    return monthlyExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+  }, [monthlyExpenses]);
 
   const totalIncome = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const currentMonth = selectedDate.getMonth();
+    const currentYear = selectedDate.getFullYear();
 
     return incomes
       .filter(i => {
@@ -63,7 +64,7 @@ export const DashboardScreen = () => {
         return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
       })
       .reduce((acc, curr) => acc + curr.amount, 0);
-  }, [incomes]);
+  }, [incomes, selectedDate]);
 
   const currentSavings = totalIncome - totalExpenses;
   const savingsGoal = userProfile.savingsGoal || 0;
@@ -80,7 +81,7 @@ export const DashboardScreen = () => {
 
   const chartData = useMemo(() => {
     const categoryTotals: { [key: string]: number } = {};
-    expenses.forEach(expense => {
+    monthlyExpenses.forEach(expense => {
       if (!categoryTotals[expense.categoryId]) {
         categoryTotals[expense.categoryId] = 0;
       }
@@ -97,7 +98,7 @@ export const DashboardScreen = () => {
         legendFontSize: 12,
       };
     }).sort((a, b) => b.population - a.population);
-  }, [expenses, categories, theme]);
+  }, [monthlyExpenses, categories, theme]);
 
   const recentIncomes = useMemo(() => {
     return [...incomes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
@@ -112,6 +113,8 @@ export const DashboardScreen = () => {
           subtitle="Bem-vindo de volta" 
           showProfile 
         />
+
+        <MonthSelector />
 
         {/* Feature Cards Slider */}
         <FeatureCardsSlider />

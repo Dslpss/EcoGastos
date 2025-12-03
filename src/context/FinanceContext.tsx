@@ -37,6 +37,8 @@ interface FinanceContextData {
   isValuesVisible: boolean;
   toggleValuesVisibility: () => void;
   clearData: () => Promise<void>;
+  selectedDate: Date;
+  changeMonth: (increment: number) => void;
 }
 
 const FinanceContext = createContext<FinanceContextData>({} as FinanceContextData);
@@ -52,6 +54,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [settings, setSettings] = useState<AppSettings>({ isDarkMode: true, notificationsEnabled: true, biometricsEnabled: false });
   const [isLoading, setIsLoading] = useState(true);
   const [isValuesVisible, setIsValuesVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const changeMonth = (increment: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + increment);
+    setSelectedDate(newDate);
+  };
 
   const toggleValuesVisibility = () => {
     setIsValuesVisible(prev => !prev);
@@ -190,7 +199,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setBalance(data.balance);
         setExpenses(data.expenses);
         setIncomes(data.incomes);
-        setRecurringBills(data.recurringBills);
+        
+        // Check for monthly reset of recurring bills
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
+        const updatedBills = data.recurringBills.map((bill: RecurringBill) => {
+          if (bill.isPaid && bill.lastPaidDate) {
+            const lastPaidDate = new Date(bill.lastPaidDate);
+            // If paid in a previous month (or year), reset it
+            if (lastPaidDate.getMonth() !== currentMonth || lastPaidDate.getFullYear() !== currentYear) {
+              return { 
+                ...bill, 
+                isPaid: false, 
+                lastPaymentExpenseId: undefined // Clear the link to the old expense
+              };
+            }
+          }
+          return bill;
+        });
+
+        setRecurringBills(updatedBills);
+        
+        // If any bills were updated, sync back to backend
+        const hasUpdates = JSON.stringify(updatedBills) !== JSON.stringify(data.recurringBills);
+        if (hasUpdates) {
+          syncToBackend({ recurringBills: updatedBills });
+        }
         
         // Merge default categories with custom ones
         if (data.categories && data.categories.length > 0) {
@@ -560,6 +595,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isValuesVisible,
       toggleValuesVisibility,
       clearData,
+      selectedDate,
+      changeMonth,
     }}>
       {children}
     </FinanceContext.Provider>

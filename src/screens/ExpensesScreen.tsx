@@ -5,20 +5,31 @@ import { formatCurrency } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { AVAILABLE_EMOJIS } from '../constants';
 import { AddExpenseModal } from '../components/AddExpenseModal';
+import { ExpenseDetailModal } from '../components/ExpenseDetailModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
 import { LinearGradient } from 'expo-linear-gradient';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { MonthSelector } from '../components/MonthSelector';
 
 export const ExpensesScreen = () => {
-  const { expenses, deleteExpense, categories, theme } = useFinance();
+  const { expenses, deleteExpense, categories, theme, selectedDate } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
 
   // Group expenses by date
   const sections = useMemo(() => {
-    const sorted = [...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const currentMonth = selectedDate.getMonth();
+    const currentYear = selectedDate.getFullYear();
+
+    const filtered = expenses.filter(e => {
+      const d = new Date(e.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    const sorted = [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     const grouped: { [key: string]: any[] } = {};
     
@@ -41,20 +52,21 @@ export const ExpensesScreen = () => {
       return {
         title,
         data: grouped[dateKey],
-        date: dateKey // for sorting if needed, but keys are already sorted by insertion order usually if processed from sorted array
+        date: dateKey
       };
     });
-  }, [expenses]);
+  }, [expenses, selectedDate]);
 
   const totalMonth = useMemo(() => {
-    const now = new Date();
+    const currentMonth = selectedDate.getMonth();
+    const currentYear = selectedDate.getFullYear();
     return expenses
       .filter(e => {
         const d = new Date(e.date);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
       })
       .reduce((acc, curr) => acc + curr.amount, 0);
-  }, [expenses]);
+  }, [expenses, selectedDate]);
 
   const handleDelete = (id: string) => {
     Alert.alert(
@@ -72,10 +84,19 @@ export const ExpensesScreen = () => {
     setModalVisible(true);
   };
 
+  const handleCardPress = (expense: any) => {
+    setSelectedExpense(expense);
+    setDetailModalVisible(true);
+  };
+
   const renderItem = ({ item, index }: { item: any, index: number }) => {
     const category = categories.find(c => c.id === item.categoryId);
     return (
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <TouchableOpacity 
+        style={[styles.card, { backgroundColor: theme.card }]}
+        onPress={() => handleCardPress(item)}
+        activeOpacity={0.7}
+      >
         <View style={styles.cardContent}>
           <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '15' }]}>
             {AVAILABLE_EMOJIS.includes(category?.icon || '') ? (
@@ -94,26 +115,7 @@ export const ExpensesScreen = () => {
             <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
           </View>
         </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: theme.primary + '15', marginRight: 8 }]}
-            onPress={() => handleEdit(item)}
-          >
-            <Ionicons name="create-outline" size={18} color={theme.primary} />
-            <Text style={[styles.actionText, { color: theme.primary }]}>Editar</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: theme.danger + '15' }]}
-            onPress={() => handleDelete(item.id)}
-          >
-            <Ionicons name="trash-outline" size={18} color={theme.danger} />
-            <Text style={[styles.actionText, { color: theme.danger }]}>Excluir</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -130,6 +132,8 @@ export const ExpensesScreen = () => {
           title="Extrato" 
           subtitle="Seus gastos detalhados"
         />
+
+        <MonthSelector />
 
         <SectionList
           sections={sections}
@@ -187,6 +191,14 @@ export const ExpensesScreen = () => {
           visible={modalVisible} 
           onClose={() => setModalVisible(false)}
           expenseToEdit={selectedExpense}
+        />
+
+        <ExpenseDetailModal
+          visible={detailModalVisible}
+          onClose={() => setDetailModalVisible(false)}
+          expense={selectedExpense}
+          onEdit={handleEdit}
+          onDelete={(id) => handleDelete(id)}
         />
       </SafeAreaView>
     </View>
