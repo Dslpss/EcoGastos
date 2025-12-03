@@ -48,7 +48,7 @@ export const AVAILABLE_COLORS = [
 export const AVAILABLE_ICONS = [
   'fast-food', 'car', 'medkit', 'game-controller', 'school', 'ellipsis-horizontal',
   'home', 'cart', 'airplane', 'build', 'shirt', 'gift', 'fitness', 'paw', 'cafe', 'beer',
-  'card', 'business', 'flash', 'bulb', 'tv', 'play-circle', 'wallet', 'logo-netflix'
+  'card', 'business', 'flash', 'bulb', 'tv', 'play-circle', 'wallet', 'film'
 ];
 
 export const AVAILABLE_EMOJIS = [

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Modal, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, Modal, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform, KeyboardAvoidingView, PanResponder, Dimensions } from 'react-native';
 import { useFinance } from '../context/FinanceContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { hslToHex } from '../utils/format';
 
 import { Category } from '../types';
 import { AVAILABLE_COLORS, AVAILABLE_ICONS, AVAILABLE_EMOJIS, ALL_ICONS } from '../constants';
@@ -19,7 +20,39 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryTo
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(AVAILABLE_COLORS[0]);
   const [selectedIcon, setSelectedIcon] = useState(ALL_ICONS[0]);
+  const [showCustomColorInput, setShowCustomColorInput] = useState(false);
   const { addCategory, updateCategory, deleteCategory, theme } = useFinance();
+
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const sliderWidthRef = React.useRef(0);
+
+  const updateColorFromGesture = (x: number) => {
+    const width = sliderWidthRef.current;
+    if (width === 0) return;
+    
+    // Clamp x between 0 and width
+    const clampedX = Math.max(0, Math.min(x, width));
+    
+    // Calculate hue (0-360)
+    const hue = (clampedX / width) * 360;
+    
+    // Convert to Hex (Saturation 100%, Lightness 50% for vibrant colors)
+    const hex = hslToHex(hue, 100, 50);
+    setSelectedColor(hex);
+  };
+
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        updateColorFromGesture(evt.nativeEvent.locationX);
+      },
+      onPanResponderMove: (evt) => {
+        updateColorFromGesture(evt.nativeEvent.locationX);
+      },
+    })
+  ).current;
 
   // Helper function to check if icon is an emoji
   const isEmoji = (icon: string) => {
@@ -37,6 +70,7 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryTo
         setName('');
         setSelectedColor(AVAILABLE_COLORS[0]);
         setSelectedIcon(ALL_ICONS[0]);
+        setShowCustomColorInput(false);
       }
     }
   }, [visible, categoryToEdit]);
@@ -138,13 +172,68 @@ export const AddCategoryModal: React.FC<Props> = ({ visible, onClose, categoryTo
                       { backgroundColor: color },
                       selectedColor === color && styles.selectedColor
                     ]}
-                    onPress={() => setSelectedColor(color)}
+                    onPress={() => {
+                      setSelectedColor(color);
+                      setShowCustomColorInput(false);
+                    }}
                     activeOpacity={0.7}
                   >
                     {selectedColor === color && <Ionicons name="checkmark" size={20} color="#FFF" />}
                   </TouchableOpacity>
                 ))}
+                
+                {/* Custom Color Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.colorOption,
+                    { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.gray },
+                    showCustomColorInput && styles.selectedColor
+                  ]}
+                  onPress={() => setShowCustomColorInput(!showCustomColorInput)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="color-palette-outline" size={24} color={theme.text} />
+                </TouchableOpacity>
               </View>
+
+              {/* Custom Color Picker (Rainbow Slider) */}
+              {showCustomColorInput && (
+                <View style={[styles.inputGroup, { backgroundColor: theme.background, marginBottom: 24, flexDirection: 'column', alignItems: 'stretch' }]}>
+                  <Text style={[styles.sectionLabel, { marginTop: 0, marginBottom: 12, fontSize: 12, color: theme.textLight }]}>
+                    Deslize para escolher
+                  </Text>
+                  
+                  <View 
+                    style={styles.sliderContainer}
+                    onLayout={(e) => {
+                      const width = e.nativeEvent.layout.width;
+                      setSliderWidth(width);
+                      sliderWidthRef.current = width;
+                    }}
+                    {...panResponder.panHandlers}
+                  >
+                    <LinearGradient
+                      colors={['#FF0000', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#FF00FF', '#FF0000']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.sliderGradient}
+                    />
+                    
+                    {/* Thumb Indicator - Position based on current color is tricky without storing Hue, 
+                        so we just show the current selected color as a preview box instead of a moving thumb 
+                        OR we could calculate X from hex if we really wanted, but for now a preview box is fine.
+                        Actually, let's just show a large preview of the selected color.
+                    */}
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, justifyContent: 'center' }}>
+                    <View style={[styles.largeColorPreview, { backgroundColor: selectedColor }]} />
+                    <Text style={{ color: theme.text, fontWeight: 'bold', fontSize: 16 }}>
+                      {selectedColor}
+                    </Text>
+                  </View>
+                </View>
+              )}
 
               {/* Icons */}
               <Text style={[styles.sectionLabel, { color: theme.textLight }]}>Ícone</Text>
@@ -303,6 +392,29 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
     transform: [{ scale: 1.1 }],
+  },
+  sliderContainer: {
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  sliderGradient: {
+    flex: 1,
+    width: '100%',
+  },
+  largeColorPreview: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    marginRight: 12,
   },
   iconsGrid: {
     flexDirection: 'row',
