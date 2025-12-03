@@ -33,6 +33,17 @@ export interface Income {
   date: string;
 }
 
+export interface RecurringIncome {
+  id: string;
+  name: string;
+  amount: number;
+  paymentDay: number; // 1-31
+  isReceived: boolean;
+  description?: string;
+  lastReceivedDate?: string;
+  lastIncomeId?: string;
+}
+
 export interface UserProfile {
   name: string;
   email: string;
@@ -53,6 +64,7 @@ export interface FinanceState {
   incomes: Income[];
   categories: Category[];
   recurringBills: RecurringBill[];
+  recurringIncomes: RecurringIncome[];
   userProfile: UserProfile;
   settings: AppSettings;
 }

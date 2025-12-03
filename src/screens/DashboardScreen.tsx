@@ -14,7 +14,6 @@ import { FinancialHealthCard } from '../components/FinancialHealthCard';
 import { WarningCard } from '../components/WarningCard';
 import { useAppConfig } from '../context/AppConfigContext';
 import { FeatureCardsSlider } from '../components/FeatureCardsSlider';
-import { SummaryCardsSlider } from '../components/SummaryCardsSlider';
 import { MonthSelector } from '../components/MonthSelector';
 
 const { width } = Dimensions.get('window');
@@ -116,9 +115,6 @@ export const DashboardScreen = () => {
         />
 
         <MonthSelector />
-
-        {/* Summary Cards (Gastos e Fixas) */}
-        <SummaryCardsSlider />
 
         {/* Feature Cards Slider (Admin) */}
         <FeatureCardsSlider />

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AVAILABLE_EMOJIS } from '../constants';
 import { AddRecurringBillModal } from '../components/AddRecurringBillModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +16,10 @@ export const RecurringBillsScreen = () => {
 
   const sortedBills = useMemo(() => {
     return [...recurringBills].sort((a, b) => a.dueDay - b.dueDay);
+  }, [recurringBills]);
+
+  const totalBills = useMemo(() => {
+    return recurringBills.reduce((acc, bill) => acc + bill.amount, 0);
   }, [recurringBills]);
 
   const handlePay = (id: string) => {
@@ -142,6 +147,22 @@ export const RecurringBillsScreen = () => {
         title="Contas Fixas" 
         subtitle="Gerencie seus pagamentos mensais"
       />
+
+      {/* Total Card */}
+      <LinearGradient
+        colors={['#4A90E2', '#50E3C2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.totalCard}
+      >
+        <View style={styles.totalContent}>
+          <Text style={styles.totalLabel}>Contas Fixas</Text>
+          <Text style={styles.totalValue}>{formatCurrency(totalBills)}</Text>
+        </View>
+        <View style={styles.totalIcon}>
+          <Ionicons name="trending-up" size={32} color="rgba(255,255,255,0.5)" />
+        </View>
+      </LinearGradient>
 
       <FlatList
         data={sortedBills}
@@ -306,5 +327,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  totalCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 24,
+    padding: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  totalContent: {
+    flex: 1,
+  },
+  totalLabel: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  totalValue: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: 'bold',
+    letterSpacing: -1,
+  },
+  totalIcon: {
+    transform: [{ rotate: '15deg' }],
   },
 });

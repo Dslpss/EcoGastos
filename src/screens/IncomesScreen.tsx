@@ -4,6 +4,7 @@ import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { AddIncomeModal } from '../components/AddIncomeModal';
+import { AddRecurringIncomeModal } from '../components/AddRecurringIncomeModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,9 +12,11 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const IncomesScreen = () => {
-  const { incomes, deleteIncome, theme } = useFinance();
+  const { incomes, deleteIncome, recurringIncomes, markIncomeAsReceived, markIncomeAsUnaccounted, deleteRecurringIncome, theme } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState<any>(null);
+  const [recurringModalVisible, setRecurringModalVisible] = useState(false);
+  const [selectedRecurringIncome, setSelectedRecurringIncome] = useState<any>(null);
 
   // Group incomes by date
   const sections = useMemo(() => {
@@ -162,6 +165,102 @@ export const IncomesScreen = () => {
           }
         />
 
+        {/* Recurring Incomes Section */}
+        {recurringIncomes.length > 0 && (
+          <View style={styles.recurringSection}>
+            <Text style={[styles.recurringTitle, { color: theme.text }]}>Rendas Fixas</Text>
+            {recurringIncomes.map(income => (
+              <View key={income.id} style={[styles.recurringCard, { backgroundColor: theme.card }]}>
+                <View style={styles.recurringContent}>
+                  <LinearGradient
+                    colors={[theme.success + '20', theme.success + '10']}
+                    style={styles.recurringIcon}
+                  >
+                    <Ionicons name="repeat" size={20} color={theme.success} />
+                  </LinearGradient>
+
+                  <View style={styles.recurringInfo}>
+                    <Text style={[styles.recurringName, { color: theme.text }]}>{income.name}</Text>
+                    <Text style={[styles.recurringDay, { color: theme.textLight }]}>Dia {income.paymentDay} de cada mês</Text>
+                  </View>
+
+                  <View style={styles.recurringRight}>
+                    <Text style={[styles.recurringAmount, { color: theme.success }]}>{formatCurrency(income.amount)}</Text>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: income.isReceived ? theme.success + '20' : theme.warning + '20' }
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        { color: income.isReceived ? theme.success : theme.warning }
+                      ]}>
+                        {income.isReceived ? 'Recebido' : 'Pendente'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.recurringActions}>
+                  {!income.isReceived ? (
+                    <TouchableOpacity
+                      style={[styles.receiveButton, { backgroundColor: theme.success }]}
+                      onPress={() => markIncomeAsReceived(income.id)}
+                    >
+                      <Ionicons name="checkmark-circle" size={16} color="#FFF" />
+                      <Text style={styles.receiveButtonText}>Marcar como Recebido</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.unreceiveButton, { backgroundColor: theme.textLight + '40' }]}
+                      onPress={() => markIncomeAsUnaccounted(income.id)}
+                    >
+                      <Ionicons name="close-circle" size={16} color={theme.text} />
+                      <Text style={[styles.unreceiveButtonText, { color: theme.text }]}>Desfazer</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.recurringActionBtn, { backgroundColor: theme.primary + '15' }]}
+                    onPress={() => {
+                      setSelectedRecurringIncome(income);
+                      setRecurringModalVisible(true);
+                    }}
+                  >
+                    <Ionicons name="create-outline" size={16} color={theme.primary} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.recurringActionBtn, { backgroundColor: theme.danger + '15' }]}
+                    onPress={() => {
+                      Alert.alert(
+                        'Excluir Renda Fixa',
+                        'Tem certeza que deseja excluir esta renda fixa?',
+                        [
+                          { text: 'Cancelar', style: 'cancel' },
+                          { text: 'Excluir', style: 'destructive', onPress: () => deleteRecurringIncome(income.id) }
+                        ]
+                      );
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={theme.danger} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              style={[styles.addRecurringButton, { backgroundColor: theme.success + '15' }]}
+              onPress={() => {
+                setSelectedRecurringIncome(null);
+                setRecurringModalVisible(true);
+              }}
+            >
+              <Ionicons name="add-circle" size={20} color={theme.success} />
+              <Text style={[styles.addRecurringText, { color: theme.success }]}>Adicionar Renda Fixa</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <TouchableOpacity 
           style={[styles.fab, { shadowColor: theme.success }]} 
           onPress={() => {
@@ -184,6 +283,15 @@ export const IncomesScreen = () => {
           visible={modalVisible} 
           onClose={() => setModalVisible(false)}
           incomeToEdit={selectedIncome}
+        />
+
+        <AddRecurringIncomeModal
+          visible={recurringModalVisible}
+          onClose={() => {
+            setRecurringModalVisible(false);
+            setSelectedRecurringIncome(null);
+          }}
+          incomeToEdit={selectedRecurringIncome}
         />
       </SafeAreaView>
     </View>
@@ -336,5 +444,120 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
+  },
+  recurringSection: {
+    padding: 20,
+    paddingTop: 0,
+  },
+  recurringTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  recurringCard: {
+    borderRadius: 16,
+    marginBottom: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recurringContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  recurringIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  recurringInfo: {
+    flex: 1,
+  },
+  recurringName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  recurringDay: {
+    fontSize: 12,
+  },
+  recurringRight: {
+    alignItems: 'flex-end',
+  },
+  recurringAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  recurringActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  receiveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  receiveButtonText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  unreceiveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  unreceiveButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  recurringActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addRecurringButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 8,
+  },
+  addRecurringText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

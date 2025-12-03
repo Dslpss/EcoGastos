@@ -34,6 +34,17 @@ const recurringBillSchema = new mongoose.Schema({
   lastPaymentExpenseId: String,
 });
 
+const recurringIncomeSchema = new mongoose.Schema({
+  id: String,
+  name: String,
+  amount: Number,
+  paymentDay: Number,
+  isReceived: Boolean,
+  description: String,
+  lastReceivedDate: String,
+  lastIncomeId: String,
+});
+
 const financeDataSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -49,6 +60,7 @@ const financeDataSchema = new mongoose.Schema({
   incomes: [incomeSchema],
   categories: [categorySchema],
   recurringBills: [recurringBillSchema],
+  recurringIncomes: [recurringIncomeSchema],
 }, {
   timestamps: true,
 });

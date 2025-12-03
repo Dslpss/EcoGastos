@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { FinanceState, Expense, Category, RecurringBill, Income, UserProfile, AppSettings } from '../types';
+import { FinanceState, Expense, Category, RecurringBill, RecurringIncome, Income, UserProfile, AppSettings } from '../types';
 import { DEFAULT_CATEGORIES, THEME } from '../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushNotificationsAsync, scheduleBillNotification, cancelBillNotification, cancelAllNotifications, scheduleAllBillNotifications } from '../utils/notifications';
@@ -39,6 +39,13 @@ interface FinanceContextData {
   clearData: () => Promise<void>;
   selectedDate: Date;
   changeMonth: (increment: number) => void;
+  // Recurring Income
+  recurringIncomes: RecurringIncome[];
+  addRecurringIncome: (income: RecurringIncome) => Promise<void>;
+  updateRecurringIncome: (income: RecurringIncome) => Promise<void>;
+  deleteRecurringIncome: (id: string) => Promise<void>;
+  markIncomeAsReceived: (id: string) => Promise<void>;
+  markIncomeAsUnaccounted: (id: string) => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextData>({} as FinanceContextData);
@@ -50,6 +57,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [recurringBills, setRecurringBills] = useState<RecurringBill[]>([]);
+  const [recurringIncomes, setRecurringIncomes] = useState<RecurringIncome[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>({ name: 'Usuário', email: 'usuario@exemplo.com', savingsGoal: 0 });
   const [settings, setSettings] = useState<AppSettings>({ isDarkMode: true, notificationsEnabled: true, biometricsEnabled: false });
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +87,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIncomes([]);
       setCategories(DEFAULT_CATEGORIES);
       setRecurringBills([]);
+      setRecurringIncomes([]);
       setIsLoading(false);
     }
   }, [isAuthenticated, isAuthLoading]);
@@ -221,10 +230,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         setRecurringBills(updatedBills);
         
-        // If any bills were updated, sync back to backend
-        const hasUpdates = JSON.stringify(updatedBills) !== JSON.stringify(data.recurringBills);
+        // Monthly reset for recurring incomes (similar to bills)
+        const updatedIncomes = (data.recurringIncomes || []).map((income: RecurringIncome) => {
+          if (income.isReceived && income.lastReceivedDate) {
+            const lastReceivedDate = new Date(income.lastReceivedDate);
+            // If received in a previous month (or year), reset it
+            if (lastReceivedDate.getMonth() !== currentMonth || lastReceivedDate.getFullYear() !== currentYear) {
+              return { 
+                ...income, 
+                isReceived: false, 
+                lastIncomeId: undefined 
+              };
+            }
+          }
+          return income;
+        });
+
+        setRecurringIncomes(updatedIncomes);
+        
+        // If any bills or incomes were updated, sync back to backend
+        const hasUpdates = JSON.stringify(updatedBills) !== JSON.stringify(data.recurringBills) || 
+                          JSON.stringify(updatedIncomes) !== JSON.stringify(data.recurringIncomes || []);
         if (hasUpdates) {
-          syncToBackend({ recurringBills: updatedBills });
+          syncToBackend({ recurringBills: updatedBills, recurringIncomes: updatedIncomes });
         }
         
         // Merge default categories with custom ones
@@ -564,6 +592,84 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  // ===== RECURRING INCOME FUNCTIONS =====
+  const addRecurringIncome = async (income: RecurringIncome) => {
+    setRecurringIncomes(prev => [...prev, income]);
+    try {
+      await financeAPI.addRecurringIncome(income);
+    } catch (e) {
+      console.error('Failed to add recurring income', e);
+    }
+  };
+
+  const updateRecurringIncome = async (updatedIncome: RecurringIncome) => {
+    setRecurringIncomes(prev => prev.map(i => i.id === updatedIncome.id ? updatedIncome : i));
+    try {
+      await financeAPI.updateRecurringIncome(updatedIncome);
+    } catch (e) {
+      console.error('Failed to update recurring income', e);
+    }
+  };
+
+  const deleteRecurringIncome = async (id: string) => {
+    setRecurringIncomes(prev => prev.filter(i => i.id !== id));
+    try {
+      await financeAPI.deleteRecurringIncome(id);
+    } catch (e) {
+      console.error('Failed to delete recurring income', e);
+    }
+  };
+
+  const markIncomeAsReceived = async (id: string) => {
+    const recurringIncome = recurringIncomes.find(i => i.id === id);
+    if (!recurringIncome) return;
+
+    const incomeEntry: Income = {
+      id: Date.now().toString(),
+      amount: recurringIncome.amount,
+      description: recurringIncome.name,
+      date: new Date().toISOString(),
+    };
+
+    setIncomes(prev => [incomeEntry, ...prev]);
+    setBalance(prev => prev + incomeEntry.amount);
+    setRecurringIncomes(prev => prev.map(i => {
+      if (i.id === id) {
+        return { ...i, isReceived: true, lastReceivedDate: incomeEntry.date, lastIncomeId: incomeEntry.id };
+      }
+      return i;
+    }));
+
+    try {
+      await financeAPI.markIncomeAsReceived(id, incomeEntry);
+    } catch (e) {
+      console.error('Failed to mark income as received', e);
+    }
+  };
+
+  const markIncomeAsUnaccounted = async (id: string) => {
+    const recurringIncome = recurringIncomes.find(i => i.id === id);
+    if (!recurringIncome || !recurringIncome.lastIncomeId) return;
+
+    setIncomes(prev => prev.filter(i => i.id !== recurringIncome.lastIncomeId));
+    const incomeToRemove = incomes.find(i => i.id === recurringIncome.lastIncomeId);
+    if (incomeToRemove) {
+      setBalance(prev => prev - incomeToRemove.amount);
+    }
+    setRecurringIncomes(prev => prev.map(i => {
+      if (i.id === id) {
+        return { ...i, isReceived: false, lastReceivedDate: undefined, lastIncomeId: undefined };
+      }
+      return i;
+    }));
+
+    try {
+      await financeAPI.markIncomeAsPending(id);
+    } catch (e) {
+      console.error('Failed to mark income as pending', e);
+    }
+  };
+
   return (
     <FinanceContext.Provider value={{
       balance,
@@ -597,6 +703,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       clearData,
       selectedDate,
       changeMonth,
+      recurringIncomes,
+      addRecurringIncome,
+      updateRecurringIncome,
+      deleteRecurringIncome,
+      markIncomeAsReceived,
+      markIncomeAsUnaccounted,
     }}>
       {children}
     </FinanceContext.Provider>

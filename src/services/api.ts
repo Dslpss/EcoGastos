@@ -105,6 +105,32 @@ export const financeAPI = {
     const response = await api.delete('/finance/clear');
     return response.data;
   },
+
+  // Recurring Income
+  addRecurringIncome: async (income: any) => {
+    const response = await api.post('/finance/recurring-incomes', income);
+    return response.data;
+  },
+
+  updateRecurringIncome: async (income: any) => {
+    const response = await api.put(`/finance/recurring-incomes/${income.id}`, income);
+    return response.data;
+  },
+
+  deleteRecurringIncome: async (id: string) => {
+    const response = await api.delete(`/finance/recurring-incomes/${id}`);
+    return response.data;
+  },
+
+  markIncomeAsReceived: async (id: string, incomeEntry: any) => {
+    const response = await api.put(`/finance/recurring-incomes/${id}/receive`, { incomeEntry });
+    return response.data;
+  },
+
+  markIncomeAsPending: async (id: string) => {
+    const response = await api.put(`/finance/recurring-incomes/${id}/unreceive`);
+    return response.data;
+  },
 };
 
 // Config API

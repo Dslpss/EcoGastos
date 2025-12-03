@@ -22,8 +22,10 @@ export const AddIncomeModal: React.FC<Props> = ({ visible, onClose, incomeToEdit
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
   const [tempSalary, setTempSalary] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [paymentDay, setPaymentDay] = useState(new Date().getDate().toString());
   
-  const { addIncome, editIncome, deleteIncome, userProfile, updateUserProfile, theme } = useFinance();
+  const { addIncome, editIncome, deleteIncome, addRecurringIncome, userProfile, updateUserProfile, theme } = useFinance();
 
   useEffect(() => {
     if (visible && incomeToEdit) {
@@ -54,7 +56,18 @@ export const AddIncomeModal: React.FC<Props> = ({ visible, onClose, incomeToEdit
       date: date.toISOString(),
     };
 
-    if (incomeToEdit) {
+    if (isRecurring) {
+      // Create recurring income
+      const recurringIncomeData = {
+        id: Date.now().toString(),
+        name: description,
+        amount: Number(amount),
+        paymentDay: parseInt(paymentDay),
+        isReceived: false,
+        description: '',
+      };
+      addRecurringIncome(recurringIncomeData);
+    } else if (incomeToEdit) {
       editIncome({ ...incomeToEdit, ...incomeData });
     } else {
       addIncome(incomeData);
@@ -71,6 +84,8 @@ export const AddIncomeModal: React.FC<Props> = ({ visible, onClose, incomeToEdit
     setDescription('');
     setSavingsGoal('');
     setDate(new Date());
+    setIsRecurring(false);
+    setPaymentDay(new Date().getDate().toString());
     onClose();
   };
 
@@ -147,6 +162,36 @@ export const AddIncomeModal: React.FC<Props> = ({ visible, onClose, incomeToEdit
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+              
+              {/* Toggle: Entrada Única vs Renda Fixa */}
+              <View style={styles.toggleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    !isRecurring && { backgroundColor: theme.success },
+                    isRecurring && { backgroundColor: theme.background, borderColor: theme.textLight, borderWidth: 1 }
+                  ]}
+                  onPress={() => setIsRecurring(false)}
+                >
+                  <Text style={[
+                    styles.toggleText,
+                    { color: !isRecurring ? '#FFF' : theme.textLight }
+                  ]}>Entrada Única</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    isRecurring && { backgroundColor: theme.success },
+                    !isRecurring && { backgroundColor: theme.background, borderColor: theme.textLight, borderWidth: 1 }
+                  ]}
+                  onPress={() => setIsRecurring(true)}
+                >
+                  <Text style={[
+                    styles.toggleText,
+                    { color: isRecurring ? '#FFF' : theme.textLight }
+                  ]}>Renda Fixa</Text>
+                </TouchableOpacity>
+              </View>
               
               {/* Amount Input */}
               <View style={styles.amountContainer}>
@@ -231,23 +276,40 @@ export const AddIncomeModal: React.FC<Props> = ({ visible, onClose, incomeToEdit
                 />
               </View>
 
-              {/* Date Input */}
-              <TouchableOpacity 
-                style={[styles.inputGroup, { backgroundColor: theme.background }]} 
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Ionicons name="calendar-outline" size={20} color={theme.success} style={styles.inputIcon} />
-                <Text style={[styles.inputText, { color: theme.text }]}>{formatDate(date.toISOString())}</Text>
-              </TouchableOpacity>
-              
-              {showDatePicker && (
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="default"
-                  onChange={onDateChange}
-                  themeVariant="light"
-                />
+              {/* Date or Payment Day based on type */}
+              {isRecurring ? (
+                <View style={[styles.inputGroup, { backgroundColor: theme.background }]}>
+                  <Ionicons name="calendar-number-outline" size={20} color={theme.success} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: theme.text }]}
+                    value={paymentDay}
+                    onChangeText={setPaymentDay}
+                    placeholder="Dia do pagamento (1-31)"
+                    placeholderTextColor={theme.textLight}
+                    keyboardType="numeric"
+                  />
+                  <Text style={[styles.dayHint, { color: theme.textLight }]}>de cada mês</Text>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.inputGroup, { backgroundColor: theme.background }]} 
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={20} color={theme.success} style={styles.inputIcon} />
+                    <Text style={[styles.inputText, { color: theme.text }]}>{formatDate(date.toISOString())}</Text>
+                  </TouchableOpacity>
+                  
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={date}
+                      mode="date"
+                      display="default"
+                      onChange={onDateChange}
+                      themeVariant="light"
+                    />
+                  )}
+                </>
               )}
 
               {/* Savings Goal Input */}
@@ -464,5 +526,27 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 16,
+    padding: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dayHint: {
+    fontSize: 14,
+    marginLeft: 8,
   },
 });

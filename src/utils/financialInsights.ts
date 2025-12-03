@@ -14,12 +14,23 @@ export const getFinancialHealth = (
   expenses: number,
   savingsGoal: number
 ): FinancialHealth => {
-  if (income === 0) {
+  // Only show "add income" message if there are expenses but no income
+  if (income === 0 && expenses > 0) {
     return {
       status: 'warning',
       message: 'Adicione sua renda para ver insights.',
       color: COLORS.warning,
       icon: 'alert-circle',
+    };
+  }
+
+  // If both income and expenses are 0, show neutral message
+  if (income === 0 && expenses === 0) {
+    return {
+      status: 'good',
+      message: 'Sem movimentações neste mês.',
+      color: '#95a5a6',
+      icon: 'information-circle',
     };
   }
 
