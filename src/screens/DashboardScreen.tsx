@@ -14,6 +14,7 @@ import { FinancialHealthCard } from '../components/FinancialHealthCard';
 import { WarningCard } from '../components/WarningCard';
 import { useAppConfig } from '../context/AppConfigContext';
 import { FeatureCardsSlider } from '../components/FeatureCardsSlider';
+import { SummaryCardsSlider } from '../components/SummaryCardsSlider';
 import { MonthSelector } from '../components/MonthSelector';
 
 const { width } = Dimensions.get('window');
@@ -116,13 +117,11 @@ export const DashboardScreen = () => {
 
         <MonthSelector />
 
-        {/* Feature Cards Slider */}
-        <FeatureCardsSlider />
+        {/* Summary Cards (Gastos e Fixas) */}
+        <SummaryCardsSlider />
 
-        {/* Warning Card */}
-        {showWarning && warningMessage && (
-          <WarningCard message={warningMessage} />
-        )}
+        {/* Feature Cards Slider (Admin) */}
+        <FeatureCardsSlider />
 
         {/* Balance Card */}
         <View style={[styles.balanceCard, { backgroundColor: theme.primary }]}>
@@ -139,6 +138,11 @@ export const DashboardScreen = () => {
             <Ionicons name="add" size={24} color={theme.primary} />
           </TouchableOpacity>
         </View>
+
+        {/* Warning Card */}
+        {showWarning && warningMessage && (
+          <WarningCard message={warningMessage} />
+        )}
 
         {/* Summary Row */}
         <View style={styles.summaryRow}>

@@ -6,14 +6,15 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useFinance } from '../context/FinanceContext';
 import { useFeatureCards } from '../hooks/useFeatureCards';
 import { AVAILABLE_EMOJIS } from '../constants';
+import { formatCurrency } from '../utils/format';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.85;
-const SIDE_PADDING = (width - CARD_WIDTH) / 2;
+const CARD_WIDTH = (width - 40) * 0.85; // Wider cards for better readability
+const SIDE_PADDING = 0;
 
 export const FeatureCardsSlider: React.FC = () => {
-  const { theme } = useFinance();
-  const { cards, loading, refresh } = useFeatureCards();
+  const { theme, expenses, recurringBills, selectedDate, isValuesVisible } = useFinance();
+  const { cards: apiCards, loading, refresh } = useFeatureCards();
   const navigation = useNavigation<any>();
   const [selectedCard, setSelectedCard] = React.useState<any>(null);
   const [modalVisible, setModalVisible] = React.useState(false);
@@ -25,10 +26,54 @@ export const FeatureCardsSlider: React.FC = () => {
     }, [])
   );
 
+  // Calculate totals for the selected month
+  const totals = React.useMemo(() => {
+    const currentMonth = selectedDate.getMonth();
+    const currentYear = selectedDate.getFullYear();
+
+    const monthlyExpenses = expenses
+      .filter(e => {
+        const date = new Date(e.date);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      })
+      .reduce((acc, curr) => acc + curr.amount, 0);
+
+    const monthlyFixed = recurringBills
+      .reduce((acc, curr) => acc + curr.amount, 0); // Assuming fixed bills are monthly
+
+    return { monthlyExpenses, monthlyFixed };
+  }, [expenses, recurringBills, selectedDate]);
+
+  // Create static cards
+  const summaryCards = React.useMemo(() => [
+    {
+      _id: 'static-expenses',
+      title: 'Gastos',
+      description: isValuesVisible ? formatCurrency(totals.monthlyExpenses) : '••••••',
+      icon: 'trending-down',
+      color: '#FFFFFF', // White Icon
+      backgroundColor: '#FF5252', // Red Background
+      textColor: '#FFFFFF',
+      action: { type: 'modal', target: '' }
+    },
+    {
+      _id: 'static-fixed',
+      title: 'Fixas',
+      description: isValuesVisible ? formatCurrency(totals.monthlyFixed) : '••••••',
+      icon: 'calendar',
+      color: '#FFFFFF', // White Icon
+      backgroundColor: '#4A90E2', // Blue Background
+      textColor: '#FFFFFF',
+      action: { type: 'modal', target: '' }
+    }
+  ], [totals, isValuesVisible]);
+
+  const allCards = [...apiCards]; // Only show API feature cards
+
   // Auto-open modal logic
   React.useEffect(() => {
-    if (!loading && cards.length > 0 && !hasShownModal.current) {
-      const modalCards = cards.filter(card => card.action.type === 'modal');
+    if (!loading && apiCards.length > 0 && !hasShownModal.current) {
+      const modalCards = apiCards.filter(card => card.action.type === 'modal');
       if (modalCards.length > 0) {
         // Open the first modal card found
         setSelectedCard(modalCards[0]);
@@ -36,7 +81,7 @@ export const FeatureCardsSlider: React.FC = () => {
         hasShownModal.current = true;
       }
     }
-  }, [cards, loading]);
+  }, [apiCards, loading]);
 
   const handleCardPress = (card: any) => {
     switch (card.action.type) {
@@ -54,7 +99,7 @@ export const FeatureCardsSlider: React.FC = () => {
     }
   };
 
-  if (loading || cards.length === 0) {
+  if (loading && allCards.length === 0) {
     return null;
   }
 
@@ -68,15 +113,18 @@ export const FeatureCardsSlider: React.FC = () => {
         decelerationRate="fast"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingHorizontal: SIDE_PADDING }
+          { paddingHorizontal: ((width - 40) * 0.075) } // Center the 85% wide cards
         ]}
       >
-        {cards.map((card, index) => (
+        {allCards.map((card, index) => (
           <TouchableOpacity
             key={card._id}
             activeOpacity={0.9}
-            onPress={() => handleCardPress(card)}
-            style={[styles.cardWrapper, index === cards.length - 1 && { marginRight: 0 }]}
+            onPress={() => {
+                if (card._id.startsWith('static')) return; // No action for static cards for now
+                handleCardPress(card);
+            }}
+            style={[styles.cardWrapper, index === allCards.length - 1 && { marginRight: 0 }]}
           >
             <LinearGradient
               colors={[card.backgroundColor, card.backgroundColor + 'DD']}
@@ -108,9 +156,9 @@ export const FeatureCardsSlider: React.FC = () => {
       </ScrollView>
 
       {/* Indicator dots */}
-      {cards.length > 1 && (
+      {allCards.length > 1 && (
         <View style={styles.indicators}>
-          {cards.map((_, index) => (
+          {allCards.map((_, index) => (
             <View
               key={index}
               style={[
@@ -173,59 +221,58 @@ export const FeatureCardsSlider: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-    marginHorizontal: -20,
+    marginBottom: 24,
+    marginTop: 8,
+    // marginHorizontal: -20, // Removed to align with page content
   },
   scrollContent: {
     paddingVertical: 8,
   },
   cardWrapper: {
     width: CARD_WIDTH,
-    marginRight: 16,
+    marginRight: 12,
   },
   firstCard: {
     // No extra margin for first card
   },
   card: {
     borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 16,
+    flexDirection: 'column', // Stack vertically for smaller cards
+    alignItems: 'flex-start',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    minHeight: 120,
+    minHeight: 140, // Taller to fit content vertically
+    height: 140,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  content: {
-    flex: 1,
-    marginRight: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 6,
-    lineHeight: 22,
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  arrow: {
     width: 40,
     height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12, // Margin bottom instead of right
+  },
+  content: {
+    flex: 1,
+    width: '100%',
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  description: {
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  arrow: {
+    display: 'none', // Hide arrow for cleaner look on small cards
   },
   indicators: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, SectionList, TouchableOpacity, Alert, Animated } from 'react-native';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/format';
@@ -12,12 +12,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MonthSelector } from '../components/MonthSelector';
+import { ExpenseCalendar } from '../components/ExpenseCalendar';
+import { DailyExpensesModal } from '../components/DailyExpensesModal';
 
 export const ExpensesScreen = () => {
   const { expenses, deleteExpense, categories, theme, selectedDate } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dailyModalVisible, setDailyModalVisible] = useState(false);
+  const [selectedDay, setSelectedDay] = useState('');
+  const sectionListRef = useRef<SectionList>(null);
 
   // Group expenses by date
   const sections = useMemo(() => {
@@ -67,6 +73,11 @@ export const ExpensesScreen = () => {
       })
       .reduce((acc, curr) => acc + curr.amount, 0);
   }, [expenses, selectedDate]);
+
+  const handleDayPress = (dateString: string) => {
+    setSelectedDay(dateString);
+    setDailyModalVisible(true);
+  };
 
   const handleDelete = (id: string) => {
     Alert.alert(
@@ -133,9 +144,37 @@ export const ExpensesScreen = () => {
           subtitle="Seus gastos detalhados"
         />
 
-        <MonthSelector />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 20 }}>
+            <View style={{ flex: 1 }}>
+                <MonthSelector />
+            </View>
+            <TouchableOpacity 
+                onPress={() => setShowCalendar(!showCalendar)}
+                style={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: 12, 
+                    backgroundColor: theme.card, 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    marginBottom: 16,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 4,
+                    elevation: 2,
+                }}
+            >
+                <Ionicons name={showCalendar ? "list" : "calendar"} size={20} color={theme.primary} />
+            </TouchableOpacity>
+        </View>
+
+        {showCalendar && (
+            <ExpenseCalendar onDayPress={handleDayPress} />
+        )}
 
         <SectionList
+          ref={sectionListRef}
           sections={sections}
           keyExtractor={item => item.id}
           renderItem={renderItem}
@@ -197,6 +236,14 @@ export const ExpensesScreen = () => {
           visible={detailModalVisible}
           onClose={() => setDetailModalVisible(false)}
           expense={selectedExpense}
+          onEdit={handleEdit}
+          onDelete={(id) => handleDelete(id)}
+        />
+
+        <DailyExpensesModal
+          visible={dailyModalVisible}
+          onClose={() => setDailyModalVisible(false)}
+          date={selectedDay}
           onEdit={handleEdit}
           onDelete={(id) => handleDelete(id)}
         />
