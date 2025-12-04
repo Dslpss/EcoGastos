@@ -24,6 +24,8 @@ export interface RecurringBill {
   isPaid: boolean;
   lastPaidDate?: string; // To track monthly payments
   lastPaymentExpenseId?: string; // To track the expense created for this payment
+  originalAmount?: number; // Original amount before partial payments
+  partialPayments?: { amount: number; date: string; expenseId: string }[]; // Track partial payments
 }
 
 export interface Income {

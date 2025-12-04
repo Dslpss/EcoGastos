@@ -2,7 +2,7 @@
   "expo": {
     "name": "EcoGastos",
     "slug": "EcoGastos",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -29,8 +29,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "08c421e5-b4f2-4c5a-bcd3-d2b00b16c39a"
+        "projectId": "bbfabfd0-02ef-4212-bd09-8f27297dd141"
       }
-    }
+    },
+    "owner": "dslpss"
   }
 }

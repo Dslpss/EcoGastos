@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AVAILABLE_EMOJIS } from '../constants';
 import { AddRecurringBillModal } from '../components/AddRecurringBillModal';
+import { PaymentModal } from '../components/PaymentModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../components/Header';
 
@@ -13,6 +14,8 @@ export const RecurringBillsScreen = () => {
   const { recurringBills, markBillAsPaid, markBillAsUnpaid, deleteRecurringBill, categories, theme } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedBill, setSelectedBill] = useState<any>(null);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [billToPay, setBillToPay] = useState<any>(null);
 
   const sortedBills = useMemo(() => {
     return [...recurringBills].sort((a, b) => a.dueDay - b.dueDay);
@@ -22,15 +25,13 @@ export const RecurringBillsScreen = () => {
     return recurringBills.reduce((acc, bill) => acc + bill.amount, 0);
   }, [recurringBills]);
 
-  const handlePay = (id: string) => {
-    Alert.alert(
-      'Confirmar Pagamento',
-      'Deseja marcar esta conta como paga?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Confirmar', onPress: () => markBillAsPaid(id) }
-      ]
-    );
+  const handlePay = (bill: any) => {
+    setBillToPay(bill);
+    setPaymentModalVisible(true);
+  };
+
+  const handleConfirmPayment = (billId: string, amount: number, isPartial: boolean) => {
+    markBillAsPaid(billId, amount, isPartial);
   };
 
   const handleUnpay = (id: string) => {
@@ -79,6 +80,12 @@ export const RecurringBillsScreen = () => {
   const renderItem = ({ item }: { item: any }) => {
     const category = categories.find(c => c.id === item.categoryId);
     const statusColor = getStatusColor(item);
+    const hasPartialPayments = item.partialPayments && item.partialPayments.length > 0;
+    const originalAmount = item.originalAmount || item.amount;
+    const paidAmount = hasPartialPayments 
+      ? item.partialPayments.reduce((sum: number, p: any) => sum + p.amount, 0)
+      : (item.isPaid ? originalAmount : 0);
+    const paymentProgress = originalAmount > 0 ? (paidAmount / originalAmount) * 100 : 0;
 
     return (
       <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -94,17 +101,45 @@ export const RecurringBillsScreen = () => {
           <View style={styles.infoContainer}>
             <Text style={[styles.name, { color: theme.text }]}>{item.name}</Text>
             <Text style={[styles.dueDate, { color: theme.textLight }]}>Vence dia {item.dueDay}</Text>
+            
+            {/* Payment Progress */}
+            {hasPartialPayments && !item.isPaid && (
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressBar, { backgroundColor: theme.gray + '30' }]}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { backgroundColor: theme.warning, width: `${Math.min(paymentProgress, 100)}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={[styles.progressText, { color: theme.warning }]}>
+                  {formatCurrency(paidAmount)} de {formatCurrency(originalAmount)}
+                </Text>
+              </View>
+            )}
+            
             <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-              <Text style={[styles.statusText, { color: statusColor }]}>{getStatusText(item)}</Text>
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {hasPartialPayments && !item.isPaid ? 'Parcialmente pago' : getStatusText(item)}
+              </Text>
             </View>
           </View>
 
           <View style={styles.actionContainer}>
-            <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
+            <Text style={[styles.amount, { color: theme.text }]}>
+              {hasPartialPayments && !item.isPaid 
+                ? formatCurrency(item.amount) 
+                : formatCurrency(originalAmount)
+              }
+            </Text>
+            {hasPartialPayments && !item.isPaid && (
+              <Text style={[styles.remainingLabel, { color: theme.textLight }]}>restante</Text>
+            )}
             {!item.isPaid ? (
               <TouchableOpacity 
                 style={[styles.payButton, { backgroundColor: theme.success }]}
-                onPress={() => handlePay(item.id)}
+                onPress={() => handlePay(item)}
               >
                 <Text style={styles.payButtonText}>Pagar</Text>
               </TouchableOpacity>
@@ -193,6 +228,16 @@ export const RecurringBillsScreen = () => {
         onClose={() => setModalVisible(false)} 
         billToEdit={selectedBill}
       />
+
+      <PaymentModal
+        visible={paymentModalVisible}
+        onClose={() => {
+          setPaymentModalVisible(false);
+          setBillToPay(null);
+        }}
+        bill={billToPay}
+        onConfirmPayment={handleConfirmPayment}
+      />
     </SafeAreaView>
   );
 };
@@ -272,11 +317,16 @@ const styles = StyleSheet.create({
   actionContainer: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    height: 48,
+    minHeight: 48,
   },
   amount: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  remainingLabel: {
+    fontSize: 10,
+    marginTop: -2,
+    marginBottom: 4,
   },
   payButton: {
     paddingHorizontal: 12,
@@ -286,6 +336,23 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: '#FFF',
     fontSize: 12,
+    fontWeight: '600',
+  },
+  progressContainer: {
+    marginBottom: 6,
+  },
+  progressBar: {
+    height: 4,
+    borderRadius: 2,
+    marginBottom: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 10,
     fontWeight: '600',
   },
   fab: {

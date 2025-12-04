@@ -28,7 +28,7 @@ interface FinanceContextData {
   updateRecurringBill: (bill: RecurringBill) => Promise<void>;
   deleteRecurringBill: (id: string) => Promise<void>;
   updateBalance: (amount: number) => void;
-  markBillAsPaid: (id: string) => Promise<void>;
+  markBillAsPaid: (id: string, amount?: number, isPartial?: boolean) => Promise<void>;
   markBillAsUnpaid: (id: string) => Promise<void>;
   updateUserProfile: (profile: UserProfile) => Promise<void>;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -487,13 +487,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     syncToBackend({ balance: amount });
   };
 
-  const markBillAsPaid = async (id: string) => {
+  const markBillAsPaid = async (id: string, amount?: number, isPartial?: boolean) => {
     const bill = recurringBills.find(b => b.id === id);
     if (bill && !bill.isPaid) {
+      const paymentAmount = amount ?? bill.amount;
+      const remainingAmount = isPartial ? bill.amount - paymentAmount : 0;
+      
       // 1. Create Expense
       const expenseId = await addExpense({
-        amount: bill.amount,
-        description: `Conta: ${bill.name}`,
+        amount: paymentAmount,
+        description: isPartial ? `Conta (parcial): ${bill.name}` : `Conta: ${bill.name}`,
         categoryId: bill.categoryId,
         date: new Date().toISOString(),
         isRecurring: true, // Mark as recurring so it persists during reset
@@ -502,9 +505,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // 2. Update Bill
       const updatedBill = { 
         ...bill, 
-        isPaid: true, 
+        isPaid: !isPartial, // Only mark as fully paid if not partial
+        amount: isPartial ? remainingAmount : bill.amount, // Update remaining amount if partial
         lastPaidDate: new Date().toISOString(),
-        lastPaymentExpenseId: expenseId
+        lastPaymentExpenseId: expenseId,
+        originalAmount: bill.originalAmount || bill.amount, // Store original amount for reference
+        partialPayments: [
+          ...(bill.partialPayments || []),
+          ...(isPartial ? [{ amount: paymentAmount, date: new Date().toISOString(), expenseId }] : [])
+        ]
       };
 
       setRecurringBills(prev => prev.map(b => b.id === id ? updatedBill : b));
