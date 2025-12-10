@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { configAPI } from '../api';
-import { LogOut, Settings, AlertTriangle, Smartphone, RefreshCw, Save, Users, Star } from 'lucide-react';
+import { LogOut, Settings, AlertTriangle, Smartphone, RefreshCw, Save, Users, Star, Upload } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 
 interface AppConfig {
@@ -86,6 +87,14 @@ export const Dashboard = () => {
               <Users className="h-5 w-5" />
               <span className="text-sm font-medium">Usuários</span>
             </Link>
+            <Link 
+              to="/updates"
+              className="flex items-center space-x-2 text-gray-600 hover:text-green-600 transition-colors bg-gray-50 px-3 py-2 rounded-lg"
+            >
+              <Upload className="h-5 w-5" />
+              <span className="text-sm font-medium">Atualizações</span>
+            </Link>
+
             <span className="text-sm text-gray-600 border-l pl-4 border-gray-200">Olá, {user?.name}</span>
             <button 
               onClick={logout}

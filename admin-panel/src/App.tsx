@@ -5,6 +5,8 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Users } from './pages/Users';
 import { FeatureCards } from './pages/FeatureCards';
+import { Updates } from './pages/Updates';
+
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -50,6 +52,15 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/updates" 
+            element={
+              <ProtectedRoute>
+                <Updates />
+              </ProtectedRoute>
+            } 
+          />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -4,7 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // API Base URL - use your computer's local IP for testing on physical device
 // For emulator: http://localhost:3000
 // For physical device: http://YOUR_IP:3000 (e.g., http://192.168.1.100:3000)
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+
+const PROD_URL = 'https://ecogastos-production.up.railway.app';
+const DEV_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+
+// In production/release builds, always use the production URL
+// In development, use the env var or localhost
+const API_URL = __DEV__ ? DEV_URL : PROD_URL;
 
 // Create axios instance
 const api = axios.create({
