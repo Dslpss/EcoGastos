@@ -15,6 +15,8 @@ import { WarningCard } from '../components/WarningCard';
 import { useAppConfig } from '../context/AppConfigContext';
 import { FeatureCardsSlider } from '../components/FeatureCardsSlider';
 import { MonthSelector } from '../components/MonthSelector';
+import { MonthlyComparisonCard } from '../components/MonthlyComparisonCard';
+import { WeeklyReportCard } from '../components/WeeklyReportCard';
 
 const { width } = Dimensions.get('window');
 
@@ -259,6 +261,12 @@ export const DashboardScreen = () => {
             </View>
           </View>
         )}
+
+        {/* Monthly Comparison */}
+        <MonthlyComparisonCard />
+
+        {/* Weekly Report */}
+        <WeeklyReportCard />
 
         {/* Recent Incomes */}
         <View style={styles.sectionHeader}>
