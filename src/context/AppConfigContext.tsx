@@ -66,15 +66,22 @@ export const AppConfigProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const checkVersion = (config: AppConfig) => {
+    console.log('[AppConfig] Checking version:', {
+      has_update: config.has_update,
+      latest: config.latest_version,
+      current: Application.nativeApplicationVersion
+    });
+
     // If has_update is false, no update
     if (!config.has_update) {
       setHasUpdate(false);
       return;
     }
 
-    // If no latest_version specified, use has_update toggle (fallback)
+    // If no latest_version specified, DO NOT force update to avoid loops
     if (!config.latest_version) {
-      setHasUpdate(true);
+      console.warn('[AppConfig] has_update is true but latest_version is missing. Skipping update check.');
+      setHasUpdate(false);
       return;
     }
 
@@ -83,8 +90,10 @@ export const AppConfigProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     // Compare versions: show update if latest > current
     if (compareVersions(config.latest_version, currentVersion) > 0) {
+      console.log('[AppConfig] Update available');
       setHasUpdate(true);
     } else {
+      console.log('[AppConfig] App is up to date');
       setHasUpdate(false);
     }
   };
