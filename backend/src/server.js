@@ -44,7 +44,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/config', require('./routes/config'));
 app.use('/api/users', require('./routes/users'));
+
 app.use('/api', require('./routes/featureCards'));
+app.use('/api/updates', require('./routes/updates'));
+
 
 // Root route
 app.get('/', (req, res) => {
