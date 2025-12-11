@@ -37,6 +37,7 @@ interface FinanceContextData {
   isValuesVisible: boolean;
   toggleValuesVisibility: () => void;
   clearData: () => Promise<void>;
+  restoreData: (backupData: any) => Promise<boolean>;
   selectedDate: Date;
   changeMonth: (increment: number) => void;
   // Recurring Income
@@ -601,6 +602,45 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const restoreData = async (backupData: any): Promise<boolean> => {
+    try {
+      // Validate backup data structure
+      if (typeof backupData !== 'object' || backupData === null) {
+        Alert.alert('Erro', 'Formato de backup inválido.');
+        return false;
+      }
+
+      // Extract data with defaults
+      const restoredBalance = typeof backupData.balance === 'number' ? backupData.balance : 0;
+      const restoredExpenses = Array.isArray(backupData.expenses) ? backupData.expenses : [];
+      const restoredIncomes = Array.isArray(backupData.incomes) ? backupData.incomes : [];
+      const restoredCategories = Array.isArray(backupData.categories) && backupData.categories.length > 0 
+        ? backupData.categories 
+        : DEFAULT_CATEGORIES;
+
+      // Update local state
+      setBalance(restoredBalance);
+      setExpenses(restoredExpenses);
+      setIncomes(restoredIncomes);
+      setCategories(restoredCategories);
+
+      // Sync to backend
+      await syncToBackend({
+        balance: restoredBalance,
+        expenses: restoredExpenses,
+        incomes: restoredIncomes,
+        categories: restoredCategories,
+      });
+
+      Alert.alert('Sucesso', 'Dados restaurados com sucesso!');
+      return true;
+    } catch (e) {
+      console.error('Failed to restore data', e);
+      Alert.alert('Erro', 'Falha ao restaurar dados.');
+      return false;
+    }
+  };
+
   // ===== RECURRING INCOME FUNCTIONS =====
   const addRecurringIncome = async (income: RecurringIncome) => {
     setRecurringIncomes(prev => [...prev, income]);
@@ -710,6 +750,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isValuesVisible,
       toggleValuesVisibility,
       clearData,
+      restoreData,
       selectedDate,
       changeMonth,
       recurringIncomes,

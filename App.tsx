@@ -16,9 +16,8 @@ const ConfigWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [showUpdate, setShowUpdate] = useState(false);
 
   useEffect(() => {
-    if (hasUpdate) {
-      setShowUpdate(true);
-    }
+    // Sync showUpdate with hasUpdate from context
+    setShowUpdate(hasUpdate);
   }, [hasUpdate]);
 
   if (isMaintenance) {

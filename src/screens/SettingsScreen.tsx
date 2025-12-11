@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import { EditProfileModal } from '../components/EditProfileModal';
@@ -12,7 +14,7 @@ import { Header } from '../components/Header';
 import { generateFinancialReport } from '../services/pdfService';
 
 export const SettingsScreen = () => {
-  const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories, clearData } = useFinance();
+  const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories, clearData, restoreData } = useFinance();
   const { logout, currentUser } = useAuth();
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
@@ -39,10 +41,22 @@ export const SettingsScreen = () => {
 
   const handleExportData = async () => {
     try {
-      const data = await AsyncStorage.getItem('@eco_gastos_data');
-      if (data) {
+      // Use data from FinanceContext (loaded from backend) instead of AsyncStorage
+      const backupData = {
+        exportDate: new Date().toISOString(),
+        balance,
+        expenses,
+        incomes,
+        categories,
+        userProfile,
+        settings,
+      };
+
+      const hasData = expenses.length > 0 || incomes.length > 0 || balance !== 0;
+      
+      if (hasData) {
         await Share.share({
-          message: data,
+          message: JSON.stringify(backupData, null, 2),
           title: 'Backup EcoGastos'
         });
       } else {
@@ -50,6 +64,56 @@ export const SettingsScreen = () => {
       }
     } catch (error) {
       Alert.alert('Erro', 'Falha ao exportar dados.');
+    }
+  };
+
+  const handleImportData = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const file = result.assets[0];
+      if (!file.uri) {
+        Alert.alert('Erro', 'Não foi possível acessar o arquivo.');
+        return;
+      }
+
+      // Read file content
+      const fileContent = await FileSystem.readAsStringAsync(file.uri);
+      
+      // Parse JSON
+      let backupData;
+      try {
+        backupData = JSON.parse(fileContent);
+      } catch (parseError) {
+        Alert.alert('Erro', 'Arquivo JSON inválido.');
+        return;
+      }
+
+      // Confirm restoration
+      Alert.alert(
+        'Restaurar Dados',
+        'Isso substituirá todos os seus dados atuais. Deseja continuar?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Restaurar',
+            style: 'destructive',
+            onPress: async () => {
+              await restoreData(backupData);
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Import error:', error);
+      Alert.alert('Erro', 'Falha ao importar dados.');
     }
   };
 
@@ -202,6 +266,15 @@ export const SettingsScreen = () => {
               <Ionicons name="chevron-forward" size={20} color={theme.textLight} />,
               handleExportData,
               '#2196F3'
+            )}
+            <View style={[styles.separator, { backgroundColor: theme.gray }]} />
+            {renderItem(
+              'cloud-download', 
+              'Restaurar Dados', 
+              'Importar backup JSON',
+              <Ionicons name="chevron-forward" size={20} color={theme.textLight} />,
+              handleImportData,
+              '#4CAF50'
             )}
             <View style={[styles.separator, { backgroundColor: theme.gray }]} />
             {renderItem(
