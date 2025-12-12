@@ -315,6 +315,7 @@ const styles = StyleSheet.create({
   userBubble: {
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
+    flexShrink: 1,
   },
   aiBubble: {
     alignSelf: 'flex-start',
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 15,
     lineHeight: 22,
-    flex: 1,
+    flexShrink: 1,
   },
   loadingContainer: {
     flexDirection: 'row',

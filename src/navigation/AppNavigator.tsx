@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -13,6 +13,7 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
+import { FloatingAIButton } from '../components/FloatingAIButton';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -101,12 +102,14 @@ export const AppNavigator = () => {
       {!isAuthenticated ? (
         <LoginScreen />
       ) : (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Tabs" component={TabNavigator} />
-          <Stack.Screen name="Incomes" component={IncomesScreen} />
-        </Stack.Navigator>
+        <View style={{ flex: 1 }}>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Tabs" component={TabNavigator} />
+            <Stack.Screen name="Incomes" component={IncomesScreen} />
+          </Stack.Navigator>
+          <FloatingAIButton />
+        </View>
       )}
     </NavigationContainer>
   );
 };
-
