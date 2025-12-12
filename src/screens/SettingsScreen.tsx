@@ -9,6 +9,7 @@ import * as FileSystem from 'expo-file-system';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import { EditProfileModal } from '../components/EditProfileModal';
+import { AIAssistantModal } from '../components/AIAssistantModal';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Header } from '../components/Header';
 import { generateFinancialReport } from '../services/pdfService';
@@ -17,6 +18,7 @@ export const SettingsScreen = () => {
   const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories, clearData, restoreData } = useFinance();
   const { logout, currentUser } = useAuth();
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+  const [isAIAssistantVisible, setIsAIAssistantVisible] = useState(false);
 
   // ... (rest of the code)
 
@@ -287,6 +289,19 @@ export const SettingsScreen = () => {
             )}
           </View>
 
+          {/* AI Assistant Section */}
+          {renderSectionHeader('ASSISTENTE IA')}
+          <View style={[styles.sectionContainer, { backgroundColor: theme.card }]}>
+            {renderItem(
+              'chatbubbles', 
+              'EcoBot', 
+              'Seu assistente financeiro inteligente',
+              <Ionicons name="chevron-forward" size={20} color={theme.textLight} />,
+              () => setIsAIAssistantVisible(true),
+              '#9C27B0'
+            )}
+          </View>
+
           {/* Reports Section */}
           {renderSectionHeader('RELATÓRIOS')}
           <View style={[styles.sectionContainer, { backgroundColor: theme.card }]}>
@@ -384,6 +399,11 @@ export const SettingsScreen = () => {
       <EditProfileModal 
         visible={isProfileModalVisible} 
         onClose={() => setIsProfileModalVisible(false)} 
+      />
+
+      <AIAssistantModal
+        visible={isAIAssistantVisible}
+        onClose={() => setIsAIAssistantVisible(false)}
       />
     </View>
   );

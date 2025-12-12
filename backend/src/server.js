@@ -47,6 +47,7 @@ app.use('/api/users', require('./routes/users'));
 
 app.use('/api', require('./routes/featureCards'));
 app.use('/api/updates', require('./routes/updates'));
+app.use('/api/ai', require('./routes/ai'));
 
 
 // Root route

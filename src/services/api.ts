@@ -147,4 +147,13 @@ export const configAPI = {
   },
 };
 
+// AI Assistant API
+export const aiAPI = {
+  chat: async (message: string) => {
+    const response = await api.post('/ai/chat', { message });
+    return response.data;
+  },
+};
+
 export default api;
+
