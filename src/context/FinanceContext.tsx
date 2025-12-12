@@ -47,6 +47,7 @@ interface FinanceContextData {
   deleteRecurringIncome: (id: string) => Promise<void>;
   markIncomeAsReceived: (id: string) => Promise<void>;
   markIncomeAsUnaccounted: (id: string) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextData>({} as FinanceContextData);
@@ -759,6 +760,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       deleteRecurringIncome,
       markIncomeAsReceived,
       markIncomeAsUnaccounted,
+      refreshData: loadData,
     }}>
       {children}
     </FinanceContext.Provider>

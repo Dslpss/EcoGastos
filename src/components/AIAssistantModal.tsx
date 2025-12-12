@@ -22,6 +22,7 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  isAction?: boolean; // Flag for action confirmation messages
 }
 
 interface Props {
@@ -30,7 +31,7 @@ interface Props {
 }
 
 export const AIAssistantModal: React.FC<Props> = ({ visible, onClose }) => {
-  const { theme } = useFinance();
+  const { theme, refreshData } = useFinance();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +43,7 @@ export const AIAssistantModal: React.FC<Props> = ({ visible, onClose }) => {
       setMessages([
         {
           id: '1',
-          text: 'Olá! 👋 Sou o EcoBot, seu assistente financeiro pessoal.\n\nPosso te ajudar com:\n• 📊 Análise dos seus gastos\n• 💰 Dicas para economizar\n• 📈 Resumo financeiro\n• 🎯 Planejamento de metas\n\nO que gostaria de saber?',
+          text: 'Olá! 👋 Sou o EcoBot, seu assistente financeiro pessoal.\n\nPosso te ajudar com:\n• 📊 Análise dos seus gastos\n• 💰 Dicas para economizar\n• 📈 Resumo financeiro\n• ✏️ Adicionar gastos e receitas\n• ✅ Marcar contas como pagas\n\nO que gostaria de fazer?',
           isUser: false,
           timestamp: new Date(),
         },
@@ -68,14 +69,28 @@ export const AIAssistantModal: React.FC<Props> = ({ visible, onClose }) => {
     try {
       const response = await aiAPI.chat(userMessage.text);
       
+      // Check if an action was performed
+      const actionPerformed = response.data?.action;
+      const actionSuccess = response.data?.actionSuccess;
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: response.data?.response || 'Desculpe, não consegui processar sua mensagem.',
         isUser: false,
         timestamp: new Date(),
+        isAction: actionPerformed && actionSuccess, // Mark as action message
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      
+      // If an action was performed successfully, sync data with server
+      if (actionPerformed && actionSuccess) {
+        console.log('Action performed, syncing data:', actionPerformed);
+        // Small delay to ensure backend has saved
+        setTimeout(() => {
+          refreshData?.();
+        }, 500);
+      }
     } catch (error: any) {
       console.error('AI Chat error:', error);
       
@@ -102,11 +117,12 @@ export const AIAssistantModal: React.FC<Props> = ({ visible, onClose }) => {
     scrollToBottom();
   }, [messages]);
 
+  // Updated suggestions with action examples
   const suggestedQuestions = [
-    'Quanto gastei esse mês?',
-    'Qual minha maior despesa?',
+    'Quanto gastei hoje?',
+    'Adiciona R$50 em Alimentação',
+    'Marca a Internet como paga',
     'Dicas para economizar',
-    'Resumo financeiro',
   ];
 
   const handleSuggestion = (question: string) => {
