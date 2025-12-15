@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
 import { EditProfileModal } from '../components/EditProfileModal';
@@ -16,7 +16,7 @@ import { Header } from '../components/Header';
 import { generateFinancialReport } from '../services/pdfService';
 
 export const SettingsScreen = () => {
-  const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories, clearData, restoreData } = useFinance();
+  const { userProfile, settings, updateSettings, theme, balance, expenses, incomes, categories, recurringBills, recurringIncomes, clearData, restoreData } = useFinance();
   const { logout, currentUser } = useAuth();
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const [isAIAssistantVisible, setIsAIAssistantVisible] = useState(false);
@@ -51,6 +51,8 @@ export const SettingsScreen = () => {
         expenses,
         incomes,
         categories,
+        recurringBills,
+        recurringIncomes,
         userProfile,
         settings,
       };
@@ -116,7 +118,7 @@ export const SettingsScreen = () => {
       );
     } catch (error) {
       console.error('Import error:', error);
-      Alert.alert('Erro', 'Falha ao importar dados.');
+      Alert.alert('Erro', `Falha ao importar dados: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

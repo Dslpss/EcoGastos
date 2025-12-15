@@ -615,6 +615,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const restoredBalance = typeof backupData.balance === 'number' ? backupData.balance : 0;
       const restoredExpenses = Array.isArray(backupData.expenses) ? backupData.expenses : [];
       const restoredIncomes = Array.isArray(backupData.incomes) ? backupData.incomes : [];
+      const restoredRecurringBills = Array.isArray(backupData.recurringBills) ? backupData.recurringBills : [];
+      const restoredRecurringIncomes = Array.isArray(backupData.recurringIncomes) ? backupData.recurringIncomes : [];
       const restoredCategories = Array.isArray(backupData.categories) && backupData.categories.length > 0 
         ? backupData.categories 
         : DEFAULT_CATEGORIES;
@@ -623,6 +625,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setBalance(restoredBalance);
       setExpenses(restoredExpenses);
       setIncomes(restoredIncomes);
+      setRecurringBills(restoredRecurringBills);
+      setRecurringIncomes(restoredRecurringIncomes);
       setCategories(restoredCategories);
 
       // Sync to backend
@@ -630,6 +634,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         balance: restoredBalance,
         expenses: restoredExpenses,
         incomes: restoredIncomes,
+        recurringBills: restoredRecurringBills,
+        recurringIncomes: restoredRecurringIncomes,
         categories: restoredCategories,
       });
 
