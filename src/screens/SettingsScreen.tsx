@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { AIAssistantModal } from '../components/AIAssistantModal';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as Application from 'expo-application';
 import { Header } from '../components/Header';
 import { generateFinancialReport } from '../services/pdfService';
 
@@ -72,7 +73,7 @@ export const SettingsScreen = () => {
   const handleImportData = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
+        type: '*/*',
         copyToCacheDirectory: true,
       });
 
@@ -372,7 +373,7 @@ export const SettingsScreen = () => {
             {renderItem(
               'information-circle', 
               'Versão', 
-              '1.0.0 (Build 2025)',
+              `${Application.nativeApplicationVersion} (Build ${Application.nativeBuildVersion})`,
               undefined,
               undefined,
               theme.textLight
