@@ -41,7 +41,7 @@ router.post('/analyze-receipt', auth, upload.single('image'), async (req, res) =
     const imageBase64 = req.file.buffer.toString('base64');
     
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp', // Use a vision-capable model
+      model: 'gemini-1.5-flash', // Use a stable vision model
       contents: [
         {
           role: 'user',
@@ -76,10 +76,15 @@ router.post('/analyze-receipt', auth, upload.single('image'), async (req, res) =
     });
 
   } catch (error) {
-    console.error('Receipt analysis error:', error);
+    console.error('Receipt analysis error details:', error);
+    console.error('Error message:', error.message);
+    if (error.response) {
+      console.error('API Response error:', error.response.data);
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Erro ao analisar recibo. Tente novamente com uma foto mais clara.',
+      message: `Erro interno: ${error.message}. Verifique os logs do servidor.`,
     });
   }
 });
