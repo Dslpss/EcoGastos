@@ -41,7 +41,7 @@ router.post('/analyze-receipt', auth, upload.single('image'), async (req, res) =
     const imageBase64 = req.file.buffer.toString('base64');
     
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // Use a stable vision model
+      model: 'gemini-1.5-flash-001', // Try specific version for @google/genai SDK
       contents: [
         {
           role: 'user',

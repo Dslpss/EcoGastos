@@ -10,6 +10,7 @@ const financeRoutes = require('./routes/finance');
 
 // Initialize express app
 const app = express();
+app.set('trust proxy', 1); // Enable rate limiter behind proxies (Railway, Heroku, etc)
 
 // Connect to MongoDB
 connectDB();
