@@ -7,6 +7,7 @@ import { formatDate } from '../utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AVAILABLE_EMOJIS } from '../constants';
+import { ReceiptScanner } from './ReceiptScanner';
 
 interface Props {
   visible: boolean;
@@ -75,6 +76,28 @@ export const AddExpenseModal: React.FC<Props> = ({ visible, onClose, expenseToEd
     onClose();
   };
 
+  const handleScanComplete = (data: any) => {
+    if (data.amount) setAmount(data.amount.toString());
+    if (data.description) setDescription(data.description);
+     if (data.date) {
+      const parsedDate = new Date(data.date);
+       if (!isNaN(parsedDate.getTime())) {
+         setDate(parsedDate);
+       }
+    }
+    
+    if (data.category) {
+      // Try to find a matching category
+      const matchedCategory = categories.find(c => 
+        c.name.toLowerCase().includes(data.category.toLowerCase()) || 
+        data.category.toLowerCase().includes(c.name.toLowerCase())
+      );
+      if (matchedCategory) {
+        setCategoryId(matchedCategory.id);
+      }
+    }
+  };
+
   const onDateChange = (event: any, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
     setShowDatePicker(Platform.OS === 'ios');
@@ -102,6 +125,12 @@ export const AddExpenseModal: React.FC<Props> = ({ visible, onClose, expenseToEd
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               
+              {!expenseToEdit && (
+                <View style={{ marginBottom: 24 }}>
+                  <ReceiptScanner onScanComplete={handleScanComplete} theme={theme} />
+                </View>
+              )}
+
               {/* Amount Input */}
               <View style={styles.amountContainer}>
                 <Text style={[styles.currencySymbol, { color: theme.textLight }]}>R$</Text>

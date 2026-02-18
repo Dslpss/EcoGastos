@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { User, AuthState } from '../types';
 import { authAPI } from '../services/api';
 
@@ -17,7 +18,7 @@ interface AuthContextData extends AuthState {
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 const STORAGE_KEYS = {
-  TOKEN: '@ecogastos:token',
+  TOKEN: 'ecogastos_token', // SecureStore keys don't need @ prefix usually, but meaningful name
   USER: '@ecogastos:user',
 };
 
@@ -32,7 +33,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadAuthState = async () => {
     try {
-      const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+      // Get token from SecureStore
+      const token = await SecureStore.getItemAsync(STORAGE_KEYS.TOKEN);
       const userJson = await AsyncStorage.getItem(STORAGE_KEYS.USER);
 
       if (token && userJson) {
@@ -67,8 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.success) {
         const { token, user } = response.data;
 
-        // Store token and user
-        await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, token);
+        // Store token in SecureStore and user in AsyncStorage
+        await SecureStore.setItemAsync(STORAGE_KEYS.TOKEN, token);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
         setCurrentUser(user);
@@ -91,8 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.success) {
         const { token, user } = response.data;
 
-        // Store token and user
-        await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, token);
+        // Store token in SecureStore and user in AsyncStorage
+        await SecureStore.setItemAsync(STORAGE_KEYS.TOKEN, token);
         await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
         setCurrentUser(user);
@@ -110,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.TOKEN);
+      await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKEN);
       await AsyncStorage.removeItem(STORAGE_KEYS.USER);
       setCurrentUser(null);
       setIsAuthenticated(false);

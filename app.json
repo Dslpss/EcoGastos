@@ -32,6 +32,9 @@
         "projectId": "bbfabfd0-02ef-4212-bd09-8f27297dd141"
       }
     },
-    "owner": "dslpss"
+    "owner": "dslpss",
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

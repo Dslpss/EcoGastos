@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, StyleSheet, Animated, View } from 'react-native';
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFinance } from '../context/FinanceContext';
-import { AIAssistantModal } from './AIAssistantModal';
 
 export const FloatingAIButton: React.FC = () => {
   const { theme } = useFinance();
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const navigation = useNavigation<any>();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -27,40 +27,33 @@ export const FloatingAIButton: React.FC = () => {
   };
 
   return (
-    <>
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            transform: [{ scale: scaleAnim }],
-            shadowColor: theme.primary,
-          },
-        ]}
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          transform: [{ scale: scaleAnim }],
+          shadowColor: theme.primary,
+        },
+      ]}
+    >
+      <TouchableOpacity
+        onPress={() => navigation.navigate('AiCoach')}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
       >
-        <TouchableOpacity
-          onPress={() => setIsModalVisible(true)}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          activeOpacity={1}
+        <LinearGradient
+          colors={[theme.primary, theme.secondary]}
+          style={styles.button}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
         >
-          <LinearGradient
-            colors={[theme.primary, theme.secondary]}
-            style={styles.button}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.iconContainer}>
-              <Ionicons name="chatbubble-ellipses" size={28} color="#FFF" />
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-
-      <AIAssistantModal
-        visible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-      />
-    </>
+          <View style={styles.iconContainer}>
+            <Ionicons name="chatbubble-ellipses" size={28} color="#FFF" />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 

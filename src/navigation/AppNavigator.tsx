@@ -10,6 +10,7 @@ import { RecurringBillsScreen } from '../screens/RecurringBillsScreen';
 import { CategoriesScreen } from '../screens/CategoriesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { AiCoachScreen } from '../screens/AiCoachScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
@@ -106,6 +107,7 @@ export const AppNavigator = () => {
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Tabs" component={TabNavigator} />
             <Stack.Screen name="Incomes" component={IncomesScreen} />
+            <Stack.Screen name="AiCoach" component={AiCoachScreen} />
           </Stack.Navigator>
           <FloatingAIButton />
         </View>

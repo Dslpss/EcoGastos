@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // For physical device: http://YOUR_IP:3000 (e.g., http://192.168.1.100:3000)
 
 const PROD_URL = 'https://ecogastos-production.up.railway.app';
-const DEV_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const DEV_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.54:3000';
 
 // In production/release builds, always use the production URL
 // In development, use the env var or localhost

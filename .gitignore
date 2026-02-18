@@ -45,3 +45,4 @@ backend/.env.*.local
 # generated native folders
 /ios
 /android
+.agent

@@ -15,6 +15,41 @@ import { MonthSelector } from '../components/MonthSelector';
 import { ExpenseCalendar } from '../components/ExpenseCalendar';
 import { DailyExpensesModal } from '../components/DailyExpensesModal';
 
+const ExpenseItem = React.memo(({ item, onPress, categories, theme }: { 
+  item: any, 
+  onPress: (item: any) => void,
+  categories: any[],
+  theme: any 
+}) => {
+  const category = categories.find(c => c.id === item.categoryId);
+  return (
+    <TouchableOpacity 
+      style={[styles.card, { backgroundColor: theme.card }]}
+      onPress={() => onPress(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.cardContent}>
+        <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '15' }]}>
+          {AVAILABLE_EMOJIS.includes(category?.icon || '') ? (
+            <Text style={{ fontSize: 20 }}>{category?.icon}</Text>
+          ) : (
+            <Ionicons name={category?.icon as any || 'pricetag'} size={20} color={category?.color || theme.gray} />
+          )}
+        </View>
+        
+        <View style={styles.infoContainer}>
+          <Text style={[styles.description, { color: theme.text }]} numberOfLines={1}>{item.description}</Text>
+          <Text style={[styles.category, { color: theme.textLight }]}>{category?.name || 'Sem Categoria'}</Text>
+        </View>
+
+        <View style={styles.amountContainer}>
+          <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export const ExpensesScreen = () => {
   const { expenses, deleteExpense, categories, theme, selectedDate } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
@@ -100,41 +135,17 @@ export const ExpensesScreen = () => {
     setDetailModalVisible(true);
   };
 
-  const renderItem = ({ item, index }: { item: any, index: number }) => {
-    const category = categories.find(c => c.id === item.categoryId);
-    return (
-      <TouchableOpacity 
-        style={[styles.card, { backgroundColor: theme.card }]}
-        onPress={() => handleCardPress(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardContent}>
-          <View style={[styles.iconContainer, { backgroundColor: (category?.color || theme.gray) + '15' }]}>
-            {AVAILABLE_EMOJIS.includes(category?.icon || '') ? (
-              <Text style={{ fontSize: 20 }}>{category?.icon}</Text>
-            ) : (
-              <Ionicons name={category?.icon as any || 'pricetag'} size={20} color={category?.color || theme.gray} />
-            )}
-          </View>
-          
-          <View style={styles.infoContainer}>
-            <Text style={[styles.description, { color: theme.text }]} numberOfLines={1}>{item.description}</Text>
-            <Text style={[styles.category, { color: theme.textLight }]}>{category?.name || 'Sem Categoria'}</Text>
-          </View>
-
-          <View style={styles.amountContainer}>
-            <Text style={[styles.amount, { color: theme.text }]}>{formatCurrency(item.amount)}</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const renderItemCallback = useMemo(() => ({ item }: { item: any }) => (
+    <ExpenseItem item={item} onPress={handleCardPress} categories={categories} theme={theme} />
+  ), [categories, theme]);
 
   const renderSectionHeader = ({ section: { title } }: any) => (
     <View style={[styles.sectionHeader, { backgroundColor: theme.background }]}>
       <Text style={[styles.sectionTitle, { color: theme.textLight }]}>{title}</Text>
     </View>
   );
+
+
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -177,7 +188,7 @@ export const ExpensesScreen = () => {
           ref={sectionListRef}
           sections={sections}
           keyExtractor={item => item.id}
-          renderItem={renderItem}
+          renderItem={renderItemCallback}
           renderSectionHeader={renderSectionHeader}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
