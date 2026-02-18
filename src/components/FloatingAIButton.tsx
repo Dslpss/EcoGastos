@@ -5,10 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFinance } from '../context/FinanceContext';
 
-export const FloatingAIButton: React.FC = () => {
+interface FloatingAIButtonProps {
+  visible?: boolean;
+}
+
+export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({ visible = true }) => {
   const { theme } = useFinance();
   const navigation = useNavigation<any>();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  if (!visible) return null;
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {

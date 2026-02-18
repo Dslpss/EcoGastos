@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, SafeAreaView, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinance } from '../context/FinanceContext';
 import { useAuth } from '../context/AuthContext';
@@ -15,7 +15,10 @@ interface Message {
   actionSuccess?: boolean;
 }
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export const AiCoachScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -116,39 +119,46 @@ export const AiCoachScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.gray + '20' }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>EcoGuru</Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textLight }]}>Seu assistente financeiro</Text>
-        </View>
-        <View style={{ width: 40 }} /> 
-      </View>
-
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {loading && (
-        <View style={styles.typingContainer}>
-          <ActivityIndicator size="small" color={theme.primary} />
-          <Text style={[styles.typingText, { color: theme.textLight }]}>EcoGuru está digitando...</Text>
-        </View>
-      )}
-
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 30}
       >
+        <View style={[
+          styles.header, 
+          { 
+            borderBottomColor: theme.gray + '20',
+            paddingTop: Math.max(insets.top, 16), // Use safe area inset for top padding
+            height: 60 + Math.max(insets.top, 16) // Adjust height dynamically
+          }
+        ]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>EcoGuru</Text>
+            <Text style={[styles.headerSubtitle, { color: theme.textLight }]}>Seu assistente financeiro</Text>
+          </View>
+          <View style={{ width: 40 }} /> 
+        </View>
+
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+
+        {loading && (
+          <View style={styles.typingContainer}>
+            <ActivityIndicator size="small" color={theme.primary} />
+            <Text style={[styles.typingText, { color: theme.textLight }]}>EcoGuru está digitando...</Text>
+          </View>
+        )}
+
         <View style={[styles.inputContainer, { backgroundColor: theme.card, borderTopColor: theme.gray + '20' }]}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.background, color: theme.text }]}
@@ -168,7 +178,7 @@ export const AiCoachScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

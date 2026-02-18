@@ -97,9 +97,15 @@ const TabNavigator = () => {
 export const AppNavigator = () => {
   const { theme } = useFinance();
   const { isAuthenticated } = useAuth();
+  const [currentRouteName, setCurrentRouteName] = React.useState<string | undefined>();
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      onStateChange={(state) => {
+        const route = state?.routes[state?.index || 0];
+        setCurrentRouteName(route?.name);
+      }}
+    >
       {!isAuthenticated ? (
         <LoginScreen />
       ) : (
@@ -109,7 +115,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="Incomes" component={IncomesScreen} />
             <Stack.Screen name="AiCoach" component={AiCoachScreen} />
           </Stack.Navigator>
-          <FloatingAIButton />
+          <FloatingAIButton visible={currentRouteName !== 'AiCoach'} />
         </View>
       )}
     </NavigationContainer>
