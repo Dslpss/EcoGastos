@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 // API Base URL - use your computer's local IP for testing on physical device
 // For emulator: http://localhost:3000
@@ -25,7 +26,7 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('@ecogastos:token');
+      const token = await SecureStore.getItemAsync('ecogastos_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -45,7 +46,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid - clear auth data
-      await AsyncStorage.removeItem('@ecogastos:token');
+      await SecureStore.deleteItemAsync('ecogastos_token');
       await AsyncStorage.removeItem('@ecogastos:user');
     }
     return Promise.reject(error);

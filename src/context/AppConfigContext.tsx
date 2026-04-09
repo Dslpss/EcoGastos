@@ -120,7 +120,7 @@ export const AppConfigProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isLoading,
       isMaintenance: config?.is_maintenance || false,
       hasUpdate,
-      isForceUpdate: config?.force_update || false,
+      isForceUpdate: (config?.force_update && hasUpdate) || false,
       maintenanceMessage: config?.maintenance_message || '',
       updateMessage: config?.update_message || '',
       updateUrl: config?.update_url || '',
